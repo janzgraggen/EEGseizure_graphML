@@ -13,7 +13,7 @@ EE452 - Netork Machine Learning
 
 ## Table of Contents
 
-- [Repository Structure](#repository-structure)
+- [Project Structure](#project-structure)
 - [Contributors](#contributors)
 
 ## Project Structure
