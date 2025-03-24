@@ -14,6 +14,7 @@ EE452 - Netork Machine Learning
 ## Table of Contents
 
 - [Project Structure](#project-structure)
+- [Data Structure](#data-structure)
 - [Contributors](#contributors)
 
 ## Project Structure
@@ -30,5 +31,25 @@ EE452 - Netork Machine Learning
 └── src
     └── example.ipynb
 ```
+## Data Structure
+
+Data are available using the following Kaggle command:
+```
+kaggle competitions download -c epfl-network-machine-learning-2025
+````
+
+The recommanded structure for the data is the following:
+```
+.
+├── distances_3d.csv
+├── sample_submission.csv
+├── test
+│   ├── segments.parquet
+│   └── signals
+└── train
+    ├── segments.parquet
+    └── signals
+```
+
 ## Contributors
 This project has been elaborated by Vincent Roduit, Caspar Henking, Aurel Mäder and Jan Zgraggen during the 2025 spring semester at EPFL.
