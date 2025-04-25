@@ -1,13 +1,13 @@
-## File for data processing
-## 
-##
-##
+# -*- coding: utf-8 -*-
+# -*- authors : Jan Zgraggen -*-
+# -*- date : 2025-04-02 -*-
+# -*- Last revision: 2025-04-25 by roduit -*-
+# -*- python version : 3.11.11 -*-
+# -*- Description: Functions to load the data-*-
 
+# Import libraries
 import numpy as np
 from scipy import signal
-
-
-
 
 bp_filter = signal.butter(4, (0.5, 30), btype="bandpass", output="sos", fs=250)
 
