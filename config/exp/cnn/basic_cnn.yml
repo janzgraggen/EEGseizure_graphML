@@ -19,13 +19,13 @@ model:
 
 # Data
 train:
-  data_pth: "project/data/train"
+  data_pth: "/home/ogut/data/train"
   batch_size: 32
   tfm: "fft"
   shuffle: True
 
 test:
-  data_pth: "project/data/test"
+  data_pth: "/home/ogut/data/test"
   batch_size: 32
   tfm: "fft"
   shuffle: False
