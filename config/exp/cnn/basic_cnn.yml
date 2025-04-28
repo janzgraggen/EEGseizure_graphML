@@ -1,0 +1,31 @@
+---
+experiment: "cnn"
+name: "basic_cnn"
+description: "Basic CNN model for signal classification"
+task: "v1"
+
+# Model
+model:
+  name : "CnnBase"
+  n_epochs: 10
+  optimizer: "SGD"
+  use_scheduler: True
+  learning_rate: 0.01
+  criterion: "BCEWithLogitsLoss"
+  config:
+    input_shape: 19
+    output_shape: 1
+    kernel_size: 5
+
+# Data
+train:
+  data_pth: "project/data/train"
+  batch_size: 32
+  tfm: "fft"
+  shuffle: True
+
+test:
+  data_pth: "project/data/test"
+  batch_size: 32
+  tfm: "fft"
+  shuffle: False

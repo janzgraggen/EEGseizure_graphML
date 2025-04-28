@@ -1,0 +1,64 @@
+# -*- coding: utf-8 -*-
+# -*- authors : Vincent Roduit -*-
+# -*- date : 2025-04-28 -*-
+# -*- Last revision: 2025-04-28 by roduit -*-
+# -*- python version : 3.11.11 -*-
+# -*- Description: Utils functions -*-
+
+# Import libraries
+import os
+import random
+import numpy as np
+import torch
+import yaml
+
+# Import modules
+from cnn_base import CnnBase
+
+def set_seed(seed):
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    if torch.backends.mps.is_available():
+        torch.mps.manual_seed(0)
+    elif torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+    # Set PYTHONHASHSEED environment variable for hash-based operations
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+    # Ensure deterministic behavior in cudnn (may slow down your training)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+def read_yml(cfg_file: str) -> dict:
+    """Read a yaml configuration file.
+
+    Args:
+        cfg_file (str): Path to the yaml configuration file.
+
+    Returns:
+        dict : Configuration parameters as a dictionary.
+    """
+    with open(cfg_file, 'r') as file:
+        cfg = yaml.safe_load(file)
+    return cfg
+
+def choose_model(cfg: dict) -> CnnBase:
+    """Choose a model based on the model name.
+
+    Args:
+        model_name (str): Name of the model to choose.
+
+    Returns:
+        CnnBase: The chosen model.
+    """
+    model_name = cfg.get("name")
+    model_cfg = cfg.get("config", {})
+    if model_name == "CnnBase":
+        return CnnBase.from_config(model_cfg=model_cfg)
+    else:
+        raise ValueError(f"Model {model_name} not found.")
