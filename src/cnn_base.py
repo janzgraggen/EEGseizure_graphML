@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-04-25 by roduit -*-
+# -*- Last revision: 2025-04-28 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
 # Import libraries
 import torch
 from tqdm import tqdm
+import pandas as pd
 
 #import files
 import constants
+from train import *
 
-
-class CnnModel(torch.nn.Module):
+class CnnBase(torch.nn.Module):
     
     def __init__(self, input_shape=19, output_shape=2, kernel_size=5, device=constants.DEVICE):
         super().__init__()
@@ -54,14 +55,14 @@ class CnnModel(torch.nn.Module):
             self,
             loader_tr,
             num_epochs=constants.NUM_EPOCHS, 
-            batch_size=constants.BATCH_SIZE, 
             learning_rate=constants.LEARNING_RATE,
-            criterion=constants.CRITERION,
-            optimizer_class=constants.OPTIMIZER,
+            criterion_name=constants.CRITERION,
+            optimizer_name=constants.OPTIMIZER,
         ):
         self.train_losses = []
 
-        optimizer = optimizer_class(self.parameters(), lr=learning_rate)
+        optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
+        criterion = get_criterion(criterion_name)
 
         for epoch in tqdm(range(num_epochs), desc="Training"):
             self.train()
@@ -87,5 +88,48 @@ class CnnModel(torch.nn.Module):
             avg_loss = running_loss / len(loader_tr)
             self.train_losses.append(avg_loss)
     
-    def evaluate():
-        pass
+    def create_submission(self, loader_te, path):
+        self.eval()
+        # Lists to store sample IDs and predictions
+        all_predictions = []
+        all_ids = []
+
+        with torch.no_grad():
+            for batch in loader_te:
+
+                # Unpack the batch
+                x_batch, x_ids = batch
+
+                # permute the input tensor to match the expected shape
+                x_batch = x_batch.permute(0, 2, 1)
+
+                # Move to device
+                x_batch = x_batch.float().to(self.device)
+
+                # Perform the forward pass to get the model's output logits
+                logits = self(x_batch)
+
+                # Convert logits to predictions.
+                predictions = (logits > 0).int().cpu().numpy()
+
+                all_predictions.extend(predictions.flatten().tolist())
+                all_ids.extend(list(x_ids))
+
+        submission_df = pd.DataFrame({"id": all_ids, "label": all_predictions})
+        submission_df.to_csv(path, index=False)
+
+        print(f"Submission file created at {path}")
+        return submission_df
+    
+    @staticmethod
+    def from_config(model_cfg):
+        """ Create a model from a configuration dictionary.
+
+        Args:
+            model_cfg (dict): Configuration dictionnary
+
+        Returns:
+            CnnBase: The model
+        """
+
+        return CnnBase(**model_cfg)
