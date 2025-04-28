@@ -31,4 +31,3 @@ def log_cfg(cfg:dict):
     mlflow.log_param("use_scheduler", use_scheduler)
     mlflow.log_param("batch_size", batch_size)
     mlflow.log_param("learning_rate", learning_rate)
-

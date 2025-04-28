@@ -17,7 +17,7 @@ matplotlib.use('Agg')  # Use non interactive backend
 # import modules
 from utils import set_seed, read_yml, choose_model
 from logs import log_cfg
-from dataloader import load_data
+from dataloader import parse_datasets
 import constants
 
 # Add base directory to sys.path
@@ -44,25 +44,28 @@ def main(args):
     mlflow.set_experiment(experiment)
     run_name = "{}:{}:{}".format(experiment, name, seed)
 
-    model_cfg = cfg.get("model", {})
-    model = choose_model(cfg=model_cfg)
-
-    print("Loading data...")
-    loader_train = load_data(cfg.get("train"))
-    loader_test = load_data(cfg.get("test"))
-
-    print("Training model...")
-    model.train_model(
-            loader_train,
-            num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
-            learning_rate=model_cfg.get("learning_rate", constants.LEARNING_RATE),
-            criterion_name=model_cfg.get("criterion", constants.CRITERION),
-            optimizer_name=cfg.get("optimizer", constants.OPTIMIZER),
-        )
-    
     with mlflow.start_run(run_name=run_name):
+
+        model_cfg = cfg.get("model", {})
+        model = choose_model(cfg=model_cfg)
+
         print('Logging model...')
         log_cfg(cfg=model_cfg)
+
+        datasets_cfg = cfg.get("datasets", {})
+        loader_train, loader_val, loader_test = parse_datasets(cfg=datasets_cfg)
+
+        print("Training model...")
+        model.fit(
+                loader_train,
+                loader_val,
+                num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
+                learning_rate=model_cfg.get("learning_rate", constants.LEARNING_RATE),
+                criterion_name=model_cfg.get("criterion", constants.CRITERION),
+                optimizer_name=cfg.get("optimizer", constants.OPTIMIZER),
+            )
+        
+        model.predict(loader=loader_train)
 
 if __name__ == '__main__':
 
