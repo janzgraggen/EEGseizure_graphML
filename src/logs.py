@@ -8,9 +8,8 @@
 # Import libraries
 import mlflow
 
-# Import modules
 
-def log_cfg(cfg:dict):
+def log_cfg(cfg: dict):
     """Function used to log the configuration file on mlflow.
 
     Args:

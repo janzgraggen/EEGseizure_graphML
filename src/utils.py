@@ -15,8 +15,13 @@ import yaml
 # Import modules
 from models.cnn_base import CnnBase
 
-def set_seed(seed):
 
+def set_seed(seed: int = 42):
+    """Set the seed for reproducibility.
+
+    Args:
+        seed (int): The seed value to set.
+    """
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -34,6 +39,7 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
 def read_yml(cfg_file: str) -> dict:
     """Read a yaml configuration file.
 
@@ -43,18 +49,19 @@ def read_yml(cfg_file: str) -> dict:
     Returns:
         dict : Configuration parameters as a dictionary.
     """
-    with open(cfg_file, 'r') as file:
+    with open(cfg_file, "r") as file:
         cfg = yaml.safe_load(file)
     return cfg
 
-def choose_model(cfg: dict) -> CnnBase:
+
+def choose_model(cfg: dict) -> torch.nn.Module:
     """Choose a model based on the model name.
 
     Args:
         model_name (str): Name of the model to choose.
 
     Returns:
-        CnnBase: The chosen model.
+        torch.nn.Module: The selected model.
     """
     model_name = cfg.get("name")
     model_cfg = cfg.get("config", {})

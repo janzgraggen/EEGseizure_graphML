@@ -34,11 +34,15 @@ SUBMISSION_FILE = SUBMISSION_DIR / "submission.csv"
 # ======================================================================================
 # =====                                MODEL PARAMS                                =====
 # ======================================================================================
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.mps.is_available() else "cpu")
+DEVICE = torch.device(
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps" if torch.mps.is_available() else "cpu"
+)
 
 NUM_EPOCHS = 1000
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-3
 NUM_WORKERS = 4
-CRITERION = 'bce'
-OPTIMIZER = 'Adam'
+CRITERION = "bce"
+OPTIMIZER = "Adam"
