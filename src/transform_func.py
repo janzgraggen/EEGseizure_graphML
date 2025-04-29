@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Jan Zgraggen -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-04-28 by roduit -*-
+# -*- Last revision: 2025-04-29 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to load the data-*-
 
@@ -13,12 +13,24 @@ bp_filter = signal.butter(4, (0.5, 30), btype="bandpass", output="sos", fs=250)
 
 
 def time_filtering(x: np.ndarray) -> np.ndarray:
-    """Filter signal in the time domain"""
+    """Filter signal in the time domain
+
+    Args:
+        x (np.ndarray): Input signal to be filtered.
+    Returns:
+        np.ndarray: Filtered signal.
+    """
     return signal.sosfiltfilt(bp_filter, x, axis=0).copy()
 
 
 def fft_filtering(x: np.ndarray) -> np.ndarray:
-    """Compute FFT and only keep"""
+    """Compute FFT and only keep the frequencies between 0.5 and 30Hz
+
+    Args:
+        x (np.ndarray): Input signal to be filtered.
+    Returns:
+        np.ndarray: Filtered signal.
+    """
     x = np.abs(np.fft.fft(x, axis=0))
     x = np.log(np.where(x > 1e-8, x, 1e-8))
 

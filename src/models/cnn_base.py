@@ -13,13 +13,21 @@ import mlflow
 from torcheval.metrics.functional import multiclass_f1_score
 from torch.utils.data import DataLoader
 
-#import files
+# import files
 import constants
 from train import *
 
+
 class CnnBase(torch.nn.Module):
-    
-    def __init__(self, layers, input_shape=19, output_shape=2, kernel_size=5, device=constants.DEVICE):
+
+    def __init__(
+        self,
+        layers,
+        input_shape=19,
+        output_shape=2,
+        kernel_size=5,
+        device=constants.DEVICE,
+    ):
         super().__init__()
         self.input_shape = input_shape
         self.output_shape = output_shape
@@ -31,16 +39,20 @@ class CnnBase(torch.nn.Module):
         in_channels = self.input_shape
 
         for layer_cfg in self.layer_configs:
-            out_channels = layer_cfg['out_channels_multiplier'] * self.input_shape
-            pooling_type = layer_cfg.get('pooling', 'max')
+            out_channels = layer_cfg["out_channels_multiplier"] * self.input_shape
+            pooling_type = layer_cfg.get("pooling", "max")
 
-            layers.append(torch.nn.Conv1d(in_channels, out_channels, self.kernel_size, padding='same'))
+            layers.append(
+                torch.nn.Conv1d(
+                    in_channels, out_channels, self.kernel_size, padding="same"
+                )
+            )
             layers.append(torch.nn.BatchNorm1d(out_channels))
             layers.append(torch.nn.ReLU())
 
-            if pooling_type == 'max':
+            if pooling_type == "max":
                 layers.append(torch.nn.MaxPool1d(2))
-            elif pooling_type == 'adaptiveavg':
+            elif pooling_type == "adaptiveavg":
                 layers.append(torch.nn.AdaptiveAvgPool1d(1))
             else:
                 raise ValueError(f"Unknown pooling type: {pooling_type}")
@@ -54,19 +66,19 @@ class CnnBase(torch.nn.Module):
 
         self.device = device
         self.to(self.device)
-        
+
     def forward(self, x):
         return self.layers(x)
-    
+
     def fit(
-            self,
-            loader_tr,
-            loader_val,
-            num_epochs=constants.NUM_EPOCHS, 
-            learning_rate=constants.LEARNING_RATE,
-            criterion_name=constants.CRITERION,
-            optimizer_name=constants.OPTIMIZER,
-        ):
+        self,
+        loader_tr,
+        loader_val,
+        num_epochs=constants.NUM_EPOCHS,
+        learning_rate=constants.LEARNING_RATE,
+        criterion_name=constants.CRITERION,
+        optimizer_name=constants.OPTIMIZER,
+    ):
         self.train_losses = []
         self.val_losses = []
 
@@ -80,25 +92,25 @@ class CnnBase(torch.nn.Module):
             self.train_losses.append(train_loss)
             accuracy, f1_score = self.predict(loader_tr)
 
-            mlflow.log_metric("accuracy", accuracy, step=e+1)
-            mlflow.log_metric("f1_score 0", f1_score[0], step=e+1)
-            mlflow.log_metric("f1_score 1", f1_score[1], step=e+1)
-            mlflow.log_metric("train_loss", train_loss, step=e+1)
+            mlflow.log_metric("accuracy", accuracy, step=e + 1)
+            mlflow.log_metric("f1_score 0", f1_score[0], step=e + 1)
+            mlflow.log_metric("f1_score 1", f1_score[1], step=e + 1)
+            mlflow.log_metric("train_loss", train_loss, step=e + 1)
 
             # Validation
             val_loss = self._epoch(loader_val, train=False)
             self.val_losses.append(val_loss)
             accuracy, f1_score = self.predict(loader_val)
-            mlflow.log_metric("val_f1_score 0", f1_score[0], step=e+1)
-            mlflow.log_metric("val_f1_score 1", f1_score[1], step=e+1)
-            mlflow.log_metric("val_accuracy", accuracy, step=e+1)
-            mlflow.log_metric("val_loss", val_loss, step=e+1)
+            mlflow.log_metric("val_f1_score 0", f1_score[0], step=e + 1)
+            mlflow.log_metric("val_f1_score 1", f1_score[1], step=e + 1)
+            mlflow.log_metric("val_accuracy", accuracy, step=e + 1)
+            mlflow.log_metric("val_loss", val_loss, step=e + 1)
 
             pbar.set_postfix({"train_loss": train_loss, "val_loss": val_loss})
             pbar.update(1)
 
     def predict_batch(self, x):
-        """ Make a prediction on a batch of data.
+        """Make a prediction on a batch of data.
 
         Args:
             x (torch.Tensor): Input data.
@@ -113,10 +125,9 @@ class CnnBase(torch.nn.Module):
             logits = self(x)
             predictions = (logits > 0).int()
         return predictions
-    
 
     def predict(self, loader):
-        """ Make a prediction on a dataset.
+        """Make a prediction on a dataset.
 
         Args:
             loader (torch.utils.data.DataLoader): DataLoader for the dataset.
@@ -138,7 +149,7 @@ class CnnBase(torch.nn.Module):
 
         # Convert lists to torch tensors
         all_predictions = torch.tensor(all_predictions).long()
-        all_targets = torch.tensor(all_targets).long()   
+        all_targets = torch.tensor(all_targets).long()
 
         # Compute accuracy
         correct = (all_predictions == all_targets).sum().item()
@@ -146,11 +157,13 @@ class CnnBase(torch.nn.Module):
 
         # Compute F1 score
         f1 = multiclass_f1_score(
-            all_predictions, all_targets, num_classes=self.output_shape+1, average=None
+            all_predictions,
+            all_targets,
+            num_classes=self.output_shape + 1,
+            average=None,
         ).tolist()
 
         return accuracy, f1
-        
 
     def _epoch(self, loader, train=True):
 
@@ -163,7 +176,7 @@ class CnnBase(torch.nn.Module):
         for x_batch, y_batch in loader:
 
             x_batch = x_batch.float().to(self.device)
-            x_batch = x_batch.permute(0, 2, 1) 
+            x_batch = x_batch.permute(0, 2, 1)
             y_batch = y_batch.float().unsqueeze(1).to(self.device)
 
             # Forward pass
@@ -180,8 +193,10 @@ class CnnBase(torch.nn.Module):
         avg_loss = running_loss / len(loader)
 
         return avg_loss
-    
-    def create_submission(self, loader:DataLoader, path:str=constants.SUBMISSION_FILE):
+
+    def create_submission(
+        self, loader: DataLoader, path: str = constants.SUBMISSION_FILE
+    ):
         self.eval()
         # Lists to store sample IDs and predictions
         all_predictions = []
@@ -213,10 +228,10 @@ class CnnBase(torch.nn.Module):
 
         print(f"Submission file created at {path}")
         return submission_df
-    
+
     @staticmethod
     def from_config(model_cfg):
-        """ Create a model from a configuration dictionary.
+        """Create a model from a configuration dictionary.
 
         Args:
             model_cfg (dict): Configuration dictionnary
