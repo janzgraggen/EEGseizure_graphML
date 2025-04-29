@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-04-28 by roduit -*-
+# -*- Last revision: 2025-04-29 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Utils functions -*-
 
@@ -13,7 +13,7 @@ import torch
 import yaml
 
 # Import modules
-from cnn_base import CnnBase
+from models.cnn_base import CnnBase
 
 def set_seed(seed):
 

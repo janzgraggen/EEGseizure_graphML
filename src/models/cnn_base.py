@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-04-28 by roduit -*-
+# -*- Last revision: 2025-04-29 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
@@ -11,6 +11,7 @@ from tqdm import tqdm
 import pandas as pd
 import mlflow
 from torcheval.metrics.functional import multiclass_f1_score
+from torch.utils.data import DataLoader
 
 #import files
 import constants
@@ -18,34 +19,38 @@ from train import *
 
 class CnnBase(torch.nn.Module):
     
-    def __init__(self, input_shape=19, output_shape=2, kernel_size=5, device=constants.DEVICE):
+    def __init__(self, layers, input_shape=19, output_shape=2, kernel_size=5, device=constants.DEVICE):
         super().__init__()
         self.input_shape = input_shape
         self.output_shape = output_shape
-        self.layers = torch.nn.Sequential(
-            torch.nn.Conv1d(self.input_shape, 2*self.input_shape, kernel_size, padding='same'),
-            torch.nn.BatchNorm1d(2*self.input_shape),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool1d(2),
-            
-            torch.nn.Conv1d(2*self.input_shape, 4*self.input_shape, kernel_size, padding='same'),
-            torch.nn.BatchNorm1d(4*self.input_shape),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool1d(2),
-            
-            torch.nn.Conv1d(4*self.input_shape, 8*self.input_shape, kernel_size, padding='same'),
-            torch.nn.BatchNorm1d(8*self.input_shape),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool1d(2),
-            
-            torch.nn.Conv1d(8*self.input_shape, 16*self.input_shape, kernel_size, padding='same'),
-            torch.nn.BatchNorm1d(16*self.input_shape),
-            torch.nn.ReLU(),
-            torch.nn.AdaptiveAvgPool1d(1),
-            
-            torch.nn.Flatten(),
-            torch.nn.Linear(16*self.input_shape, self.output_shape),
-        )
+        self.layer_configs = layers
+        self.kernel_size = kernel_size
+        self.device = device
+
+        layers = []
+        in_channels = self.input_shape
+
+        for layer_cfg in self.layer_configs:
+            out_channels = layer_cfg['out_channels_multiplier'] * self.input_shape
+            pooling_type = layer_cfg.get('pooling', 'max')
+
+            layers.append(torch.nn.Conv1d(in_channels, out_channels, self.kernel_size, padding='same'))
+            layers.append(torch.nn.BatchNorm1d(out_channels))
+            layers.append(torch.nn.ReLU())
+
+            if pooling_type == 'max':
+                layers.append(torch.nn.MaxPool1d(2))
+            elif pooling_type == 'adaptiveavg':
+                layers.append(torch.nn.AdaptiveAvgPool1d(1))
+            else:
+                raise ValueError(f"Unknown pooling type: {pooling_type}")
+
+            in_channels = out_channels
+
+        layers.append(torch.nn.Flatten())
+        layers.append(torch.nn.Linear(in_channels, self.output_shape))
+
+        self.layers = torch.nn.Sequential(*layers)
 
         self.device = device
         self.to(self.device)
@@ -176,14 +181,14 @@ class CnnBase(torch.nn.Module):
 
         return avg_loss
     
-    def create_submission(self, loader_te, path):
+    def create_submission(self, loader:DataLoader, path:str=constants.SUBMISSION_FILE):
         self.eval()
         # Lists to store sample IDs and predictions
         all_predictions = []
         all_ids = []
 
         with torch.no_grad():
-            for batch in loader_te:
+            for batch in loader:
 
                 # Unpack the batch
                 x_batch, x_ids = batch

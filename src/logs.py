@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-04-28 by roduit -*-
+# -*- Last revision: 2025-04-29 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to log parameters on Mlflow-*-
 
@@ -21,7 +21,6 @@ def log_cfg(cfg:dict):
     n_epochs = cfg.get("num_epochs", None)
     optimizer = cfg.get("optimizer", None)
     use_scheduler = cfg.get("use_scheduler", None)
-    batch_size = cfg.get("batch_size", None)
     learning_rate = cfg.get("learning_rate", None)
 
     # Log parameters
@@ -29,5 +28,4 @@ def log_cfg(cfg:dict):
     mlflow.log_param("n_epochs", n_epochs)
     mlflow.log_param("optimizer", optimizer)
     mlflow.log_param("use_scheduler", use_scheduler)
-    mlflow.log_param("batch_size", batch_size)
     mlflow.log_param("learning_rate", learning_rate)

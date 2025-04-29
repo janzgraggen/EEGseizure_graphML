@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Jan Zgraggen -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-04-28 by roduit -*-
+# -*- Last revision: 2025-04-29 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to run the project-*-
 
@@ -66,6 +66,8 @@ def main(args):
             )
         
         model.predict(loader=loader_train)
+
+        model.create_submission(loader=loader_test)
 
 if __name__ == '__main__':
 

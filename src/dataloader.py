@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-04-28 by roduit -*-
+# -*- Last revision: 2025-04-29 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to load the project-*-
 
@@ -76,13 +76,19 @@ def load_data(
     # Get additional parameters
     batch_size = cfg.get("batch_size", constants.BATCH_SIZE)
     shuffle = cfg.get("shuffle", True)
+    set_name = cfg.get("set", None)
+    get_id = True if set_name == "test" else False
+
+    if get_id:
+        clips = rename_id(clips)
 
     # Create dataset
     dataset = EEGDataset(
         clips,
         signals_root=path,
         signal_transform=tfm,
-        prefetch=True)
+        prefetch=True,
+        return_id=get_id)
 
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
@@ -101,3 +107,17 @@ def get_transform(tfm_name:str):
         return fft_filtering
     else:
         return None
+
+def rename_id(df):
+
+    df.reset_index(inplace=True)
+
+    split_cols = df['id'].str.split('_', expand=True)
+    split_cols.columns = ['name', 'session', 'time', 'idx']
+    split_cols['idx'] = split_cols['idx'].astype(int)
+
+    df = df.drop(columns=['id'])
+
+    df.index = pd.MultiIndex.from_frame(split_cols)
+
+    return df
