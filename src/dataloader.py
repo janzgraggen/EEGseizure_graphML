@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-04-29 by roduit -*-
+# -*- Last revision: 2025-04-30 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to load the project-*-
 
@@ -78,8 +78,8 @@ def load_data(cfg: dict) -> DataLoader:
     set_name = cfg.get("set", None)
     get_id = True if set_name == "test" else False
 
-    if get_id:
-        clips = rename_id(clips)
+    # if get_id:
+    #     clips = rename_id(clips)
 
     # Create dataset
     dataset = EEGDataset(
