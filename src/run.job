@@ -4,6 +4,7 @@
 #SBATCH --qos=ee-452
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
+#SBATCH --mem=16G
 #SBATCH --output run-log-%J.out
 
 module load gcc python
