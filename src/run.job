@@ -8,6 +8,6 @@
 
 module load gcc python
 
-source $HOME/project/venvs/venv_project/bin/activate
+source $HOME/venvs/venv_project/bin/activate
 
-python3 $HOME/project/src/run.py
+python3 $HOME/EE452-Network-Machine-Learning/project/src/run.py
