@@ -7,10 +7,17 @@
 
 # Import librairies
 import pandas as pd
+from holoviews.operation import threshold
 from seiz_eeg.dataset import EEGDataset
 from torch.utils.data import DataLoader
 import os
 from tqdm import tqdm
+import networkx as nx
+import copy  # for deep graph copy
+from torch_geometric.utils.convert import from_networkx
+
+
+
 
 # Import modules
 import constants
@@ -72,6 +79,7 @@ def load_data(cfg: dict) -> DataLoader:
     tfm_name = cfg.get("tfm", None)
     tfm = get_transform(tfm_name=tfm_name)
 
+
     # Get additional parameters
     batch_size = cfg.get("batch_size", constants.BATCH_SIZE)
     shuffle = cfg.get("shuffle", True)
@@ -86,10 +94,64 @@ def load_data(cfg: dict) -> DataLoader:
         clips, signals_root=path, signal_transform=tfm, prefetch=True, return_id=get_id
     )
 
+    # Graph construction
+    G_construction = cfg.get("G_construction", None)
+    dataset = graph_construction(dataset, G_construction, cfg)
+
+
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
     return loader
 
+def graph_construction(dataset, G_construction, cfg):
+
+    if G_construction == 'none':
+        return dataset
+
+    elif G_construction == 'distance':
+        distance_df = pd.read_csv('project/data/distances_3d.csv')
+        edge_threshold =  cfg.get("edge_threshold", None)
+
+        adj_matrix = distance_df.pivot(index='from', columns='to', values='distance')
+        adj_matrix = adj_matrix.reindex(distance_df['from'].unique(), axis=0).reindex(distance_df['from'].unique(),
+                                                                                      axis=1)
+        adj_matrix = np.where(adj_matrix < edge_threshold, adj_matrix, 0)
+
+        distance_graphs = []
+        for i in range(len(dataset)):
+            G = nx.from_numpy_array(adj_matrix)
+
+            for k, ch in enumerate(dataset.get_channels_names()):
+                G.add_node(k, signal=np.asarray(dataset[i][0].T[k], dtype=np.float32))
+
+            distance_graphs.append((from_networkx(G), dataset[i][1]))
+
+        return distance_graphs
+
+
+    elif G_construction == 'correlation':
+
+        edge_threshold =  cfg.get("edge_threshold", None)
+        correlation_graphs = []
+
+        for i in range(len(dataset)):
+
+            adj_matrix = np.corrcoef(np.asarray(dataset[i][0].T, dtype=np.float32))  # shape: (n_channels, n_channels)
+            adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
+            np.fill_diagonal(adj_matrix, 0)
+            G = nx.from_numpy_array(adj_matrix)
+
+            for k, ch in enumerate(dataset.get_channels_names()):
+                G.add_node(k, signal=np.asarray(dataset[i][0].T[k], dtype=np.float32))
+
+            correlation_graphs.append((from_networkx(G), dataset[i][1]))
+
+        return correlation_graphs
+
+
+
+    else:
+        raise ValueError("This graph construction method is not implemented.")
 
 def get_transform(tfm_name: str) -> callable:
     """Get the transform function based on the name provided.
