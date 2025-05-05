@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#SBATCH --account=ee-452
+#SBATCH --qos=ee-452
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --mem=16G
+#SBATCH --output run-log-%J.out
+
+module load gcc python
+
+source $HOME/venvs/venv_project/bin/activate
+
+python3 $HOME/EE452-Network-Machine-Learning/project/src/run.py
