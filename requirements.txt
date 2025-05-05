@@ -7,3 +7,6 @@ matplotlib==3.10.0
 numpy==1.26.4
 scipy==1.15.2
 pyyaml==6.0.2
+torcheval==0.0.7
+torch-geometric==2.6.1
+holoviews==1.20.2
