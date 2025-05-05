@@ -9,29 +9,28 @@ datasets:
 -
   set: "train"
   split: [0, 0.8]
-  path: "/home/ogut/data/train"
+  path: "../data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "none"
   shuffle: True
+  sampling: True
+  size: 4
   num_workers: 4
 
 -
   set: "val"
   split: [0.8, 1]
-  path: "/home/ogut/data/train"
+  path: "../data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "none"
   shuffle: False
   num_workers: 4
 
 -
   set: "test"
-  path: "/home/ogut/data/test"
+  path: "../data/test"
   batch_size: 32
   tfm: "fft"
-  G_construction: "none"
   shuffle: False
   num_workers: 4
 
