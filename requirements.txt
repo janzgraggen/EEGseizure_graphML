@@ -7,3 +7,4 @@ matplotlib==3.10.0
 numpy==1.26.4
 scipy==1.15.2
 pyyaml==6.0.2
+torcheval==0.0.7
