@@ -10,8 +10,6 @@ import argparse
 import mlflow
 import matplotlib
 import os
-import sys
-from pathlib import Path
 
 matplotlib.use("Agg")  # Use non interactive backend
 
@@ -20,13 +18,6 @@ from utils import set_seed, read_yml, choose_model
 from logs import log_cfg
 from dataloader import parse_datasets
 import constants
-
-# Add base directory to sys.path
-parent_dir = Path(__file__).resolve().parents[2]
-if str(parent_dir) not in sys.path:
-    sys.path.append(str(parent_dir))
-os.chdir(parent_dir)
-
 
 def main(args: argparse.Namespace):
     """Define the main function to run the project.
@@ -75,13 +66,12 @@ def main(args: argparse.Namespace):
 
         model.create_submission(loader=loader_test)
 
-
 if __name__ == "__main__":
 
     # Use argument
     parser = argparse.ArgumentParser(description="Run grade computation")
     parser.add_argument(
-        "--cfg", type=str, default="project/config/exp/cnn/basic_cnn.yml"
+        "--cfg", type=str, default="../config/exp/cnn/basic_cnn_local_upsample.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--run_id", type=str, default=None)
