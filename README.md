@@ -64,7 +64,7 @@ This first part is important in case it is your first use of SCITAS.
 
 This second part is what you have to follow when you want to run a job inside the cluster :
 
-- To run a test, you simply need to do ```sbatch project/src/run.job```.
+- To run a test, you simply need to do ```sbatch run.job --cfg "path/to/cfg_file.yml" --seed seed_number --run_id run_id``` from where the file is.
 
 <!-- NOT FUNCTIONAL - If you want to run a so-called interactive job (basically one where you can directly see the outputs of your functions in the terminal), run ```Sinteract -p gpu -g gpu:1```. This creates a terminal directly on the node, which means that to execute code you have to run (for example in the src/ folder) ```python3 run.py --kwargs```.-->
 
