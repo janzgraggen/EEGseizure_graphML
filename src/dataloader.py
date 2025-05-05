@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-04-30 by roduit -*-
+# -*- Last revision: 2025-05-05 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to load the project-*-
 
@@ -9,15 +9,13 @@
 import pandas as pd
 from holoviews.operation import threshold
 from seiz_eeg.dataset import EEGDataset
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 import os
+from torch.utils.data.sampler import WeightedRandomSampler
 from tqdm import tqdm
 import networkx as nx
 import copy  # for deep graph copy
 from torch_geometric.utils.convert import from_networkx
-
-
-
 
 # Import modules
 import constants
@@ -85,30 +83,58 @@ def load_data(cfg: dict) -> DataLoader:
     shuffle = cfg.get("shuffle", True)
     set_name = cfg.get("set", None)
     get_id = True if set_name == "test" else False
-
-    # if get_id:
-    #     clips = rename_id(clips)
+    sampling = cfg.get("sampling", False)
+    size = int(cfg.get("size", 1))
 
     # Create dataset
     dataset = EEGDataset(
         clips, signals_root=path, signal_transform=tfm, prefetch=True, return_id=get_id
     )
 
+    sampler = None
+
+    if sampling:
+        n_classes = len(np.unique(dataset.get_label_array()))
+        weights = make_weights_for_balanced_classes(dataset, n_classes)
+        sampler = WeightedRandomSampler(weights, size * len(dataset), replacement=True)
+        shuffle = False
+
     # Graph construction
     G_construction = cfg.get("G_construction", None)
-    dataset = graph_construction(dataset, G_construction, cfg)
+    if G_construction is not None:
+        dataset = graph_construction(dataset, G_construction, cfg)
 
 
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
     return loader
 
+def make_weights_for_balanced_classes(samples:Dataset, nclasses:int) -> list:
+    """Code taken from https://stackoverflow.com/questions/67799246/weighted-random-sampler-oversample-or-undersample
+    This function is used to create weights for each class in the dataset.
+
+    Args:
+        samples (torch.utils.data.Dataset): Dataset containing the samples.
+        nclasses (int): Number of classes in the dataset.
+
+    Returns:
+        weights (list): A list of weights for each sample in the dataset.
+    """
+    n_samples = len(samples)
+    count_per_class = [0] * nclasses
+    for _, sample_class in samples:
+        count_per_class[sample_class] += 1
+    weight_per_class = [0.] * nclasses
+    for i in range(nclasses):
+        weight_per_class[i] = float(n_samples) / float(count_per_class[i])
+    weights = [0] * n_samples
+    for idx, (sample, sample_class) in enumerate(samples):
+        weights[idx] = weight_per_class[sample_class]
+    return weights
+
 def graph_construction(dataset, G_construction, cfg):
 
-    if G_construction == 'none':
-        return dataset
-
-    elif G_construction == 'distance':
+    if G_construction == 'distance':
         distance_df = pd.read_csv('project/data/distances_3d.csv')
         edge_threshold =  cfg.get("edge_threshold", None)
 
@@ -148,8 +174,6 @@ def graph_construction(dataset, G_construction, cfg):
 
         return correlation_graphs
 
-
-
     else:
         raise ValueError("This graph construction method is not implemented.")
 
@@ -166,26 +190,3 @@ def get_transform(tfm_name: str) -> callable:
         return fft_filtering
     else:
         return None
-
-
-def rename_id(df: pd.DataFrame) -> pd.DataFrame:
-    """Rename the id column in the dataframe to a multi-index to match the EEGDataset.
-    The id column is split into multiple columns: name, session, time, and idx.
-
-    Args:
-        df (pd.DataFrame): Dataframe containing the id column.
-    Returns:
-        pd.DataFrame: Dataframe with the id column renamed to a multi-index.
-    """
-
-    df.reset_index(inplace=True)
-
-    split_cols = df["id"].str.split("_", expand=True)
-    split_cols.columns = ["name", "session", "time", "idx"]
-    split_cols["idx"] = split_cols["idx"].astype(int)
-
-    df = df.drop(columns=["id"])
-
-    df.index = pd.MultiIndex.from_frame(split_cols)
-
-    return df
