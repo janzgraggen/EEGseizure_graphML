@@ -33,6 +33,8 @@ SUBMISSION_FILE = SUBMISSION_DIR / "submission.csv"
 
 DISTANCE_3D_FILE = DATA_DIR / "distance_3d.csv"
 
+CFG_DIR = ROOT_DIR / "config" / "exp"
+
 # ======================================================================================
 # =====                                MODEL PARAMS                                =====
 # ======================================================================================
