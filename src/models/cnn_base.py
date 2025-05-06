@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-04-29 by roduit -*-
+# -*- Last revision: 2025-05-06 by Caspar -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
@@ -10,7 +10,7 @@ import torch
 from tqdm import tqdm
 import pandas as pd
 import mlflow
-from torcheval.metrics.functional import multiclass_f1_score
+from torcheval.metrics.functional import binary_f1_score
 from torch.utils.data import DataLoader
 
 # import files
@@ -90,24 +90,25 @@ class CnnBase(torch.nn.Module):
             # Training
             train_loss = self._epoch(loader_tr, train=True)
             self.train_losses.append(train_loss)
-            accuracy, f1_score = self.predict(loader_tr)
+            train_accuracy, train_f1_score = self.predict(loader_tr)
 
-            mlflow.log_metric("accuracy", accuracy, step=e + 1)
-            mlflow.log_metric("f1_score 0", f1_score[0], step=e + 1)
-            mlflow.log_metric("f1_score 1", f1_score[1], step=e + 1)
+            mlflow.log_metric("train_f1_score ", train_f1_score, step=e + 1)
+            mlflow.log_metric("train_accuracy", train_accuracy, step=e + 1)
             mlflow.log_metric("train_loss", train_loss, step=e + 1)
 
             # Validation
             val_loss = self._epoch(loader_val, train=False)
             self.val_losses.append(val_loss)
-            accuracy, f1_score = self.predict(loader_val)
-            mlflow.log_metric("val_f1_score 0", f1_score[0], step=e + 1)
-            mlflow.log_metric("val_f1_score 1", f1_score[1], step=e + 1)
-            mlflow.log_metric("val_accuracy", accuracy, step=e + 1)
+            val_accuracy, val_f1_score = self.predict(loader_val)
+            
+            mlflow.log_metric("val_f1_score ", val_f1_score, step=e + 1)
+            mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
             mlflow.log_metric("val_loss", val_loss, step=e + 1)
 
-            pbar.set_postfix({"train_loss": train_loss, "val_loss": val_loss})
-            pbar.update(1)
+            pbar.set_postfix({"\ntrain_loss": train_loss, "val_loss": val_loss,
+                "\ntrain_f1_score": train_f1_score, "val_f1_score": val_f1_score,
+                "\ntrain_accuracy": train_accuracy, "val_accuracy": val_accuracy})
+            pbar.update(1) 
 
     def predict_batch(self, x):
         """Make a prediction on a batch of data.
@@ -156,14 +157,11 @@ class CnnBase(torch.nn.Module):
         accuracy = correct / len(all_targets)
 
         # Compute F1 score
-        f1 = multiclass_f1_score(
+        f1 = binary_f1_score(
             all_predictions,
-            all_targets,
-            num_classes=self.output_shape + 1,
-            average=None,
-        ).tolist()
-
-        return accuracy, f1
+            all_targets
+        )
+        return accuracy, float(f1)
 
     def _epoch(self, loader, train=True):
 
