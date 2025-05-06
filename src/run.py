@@ -68,14 +68,17 @@ def main(args: argparse.Namespace):
 
 if __name__ == "__main__":
 
+    cfg_path = "project/config/exp/"
+
     # Use argument
     parser = argparse.ArgumentParser(description="Run grade computation")
-    parser.add_argument(
-        "--cfg", type=str, default="../config/exp/cnn/basic_cnn_local_upsample.yml"
+    parser.add_argument("--cfg", type=str, default="basic_cnn_local_upsample.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--run_id", type=str, default=None)
 
     args = parser.parse_args()
+
+    args.cfg = cfg_path + args.cfg
 
     main(args=args)

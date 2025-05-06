@@ -14,6 +14,7 @@ import yaml
 
 # Import modules
 from models.cnn_base import CnnBase
+from models.graph_models import GAT, GCN
 
 
 def set_seed(seed: int = 42):
@@ -67,5 +68,12 @@ def choose_model(cfg: dict) -> torch.nn.Module:
     model_cfg = cfg.get("config", {})
     if model_name == "CnnBase":
         return CnnBase.from_config(model_cfg=model_cfg)
+    
+    elif model_name == "GAT":
+        return GAT.from_config(model_cfg=model_cfg)
+    
+    elif model_name == "GCN":
+        return GCN.from_config(model_cfg=model_cfg)
+    
     else:
         raise ValueError(f"Model {model_name} not found.")

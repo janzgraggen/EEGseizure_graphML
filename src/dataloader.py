@@ -135,7 +135,7 @@ def make_weights_for_balanced_classes(samples:Dataset, nclasses:int) -> list:
 def graph_construction(dataset, G_construction, cfg):
 
     if G_construction == 'distance':
-        distance_df = pd.read_csv('project/data/distances_3d.csv')
+        distance_df = pd.read_csv('project/documents/distances_3d.csv')
         edge_threshold =  cfg.get("edge_threshold", None)
 
         adj_matrix = distance_df.pivot(index='from', columns='to', values='distance')
