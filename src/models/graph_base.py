@@ -129,7 +129,6 @@ class GraphBase(torch.nn.Module):
             self.eval()
         running_loss = 0.0
         for batch in loader:
-            test_var += 1
             batch = batch.to(self.device)
             out = self(batch)  # expects batch to be PyG Batch object
             y = batch.y.view(-1,1).float()

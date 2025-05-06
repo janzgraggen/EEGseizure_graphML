@@ -37,7 +37,7 @@ def main(args: argparse.Namespace):
     name = cfg.get("name", "debug")
 
     # Set mlflow informations
-    mlflow.set_tracking_uri(uri="../project/mlruns")
+    mlflow.set_tracking_uri(uri="./project/mlruns")
     mlflow.set_experiment(experiment)
     run_name = "{}:{}:{}".format(experiment, name, seed)
 
