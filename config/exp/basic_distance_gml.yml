@@ -12,7 +12,10 @@ datasets:
   path: "project/data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "distance"
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
+
   edge_threshold: 1
   shuffle: True
   num_workers: 4
@@ -23,7 +26,9 @@ datasets:
   path: "project/data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "distance"
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
   edge_threshold: 1
   shuffle: False
   num_workers: 4
@@ -33,7 +38,9 @@ datasets:
   path: "project/data/test"
   batch_size: 32
   tfm: "fft"
-  G_construction: "distance"
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
   edge_threshold: 1
   shuffle: False
   num_workers: 4

@@ -5,8 +5,6 @@ description: "Two-layer GCN for seizure prediction"
 task: "v1"
 
 # Data (same splits as before)
-
-# Data
 datasets:
 -
   set: "train"
@@ -14,7 +12,10 @@ datasets:
   path: "project/data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "distance"
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
+
   edge_threshold: 1
   shuffle: True
   num_workers: 4
@@ -25,17 +26,9 @@ datasets:
   path: "project/data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "distance"
-  edge_threshold: 1
-  shuffle: False
-  num_workers: 4
-
--
-  set: "test"
-  path: "project/data/test"
-  batch_size: 32
-  tfm: "fft"
-  G_construction: "distance"
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
   edge_threshold: 1
   shuffle: False
   num_workers: 4

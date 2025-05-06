@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-05-04 by janzgraggen -*-
+# -*- Last revision: 2025-05-06 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
@@ -34,8 +34,8 @@ class GAT(GraphBase):
         x =  nngc.global_mean_pool(x, batch)
         return self.lin(x)
     @staticmethod
-    def from_config(cfg):
-        return GAT(**cfg)
+    def from_config(model_cfg):
+        return GAT(**model_cfg)
 
 class GCN(GraphBase):
     def __init__(self, in_channels: int, hidden_channels: int):
@@ -53,6 +53,6 @@ class GCN(GraphBase):
         return self.lin(x)
     
     @staticmethod
-    def from_config(cfg):
-        return GCN(**cfg)
+    def from_config(model_cfg):
+        return GCN(**model_cfg)
     

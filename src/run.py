@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Jan Zgraggen -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-05 by roduit -*-
+# -*- Last revision: 2025-05-06 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to run the project-*-
 
@@ -37,7 +37,7 @@ def main(args: argparse.Namespace):
     name = cfg.get("name", "debug")
 
     # Set mlflow informations
-    mlflow.set_tracking_uri(uri="./project/mlruns")
+    mlflow.set_tracking_uri(uri="../project/mlruns")
     mlflow.set_experiment(experiment)
     run_name = "{}:{}:{}".format(experiment, name, seed)
 
