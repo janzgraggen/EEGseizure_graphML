@@ -8,7 +8,6 @@
 # Import libraries
 import mlflow
 from torchinfo import summary
-from torch_geometric.nn import summary as pyg_summary
 from models.graph_models import GAT, GCN
 from models.cnn_base import CnnBase
 import tempfile
@@ -16,7 +15,6 @@ from pathlib import Path
 
 # Import modules
 import constants
-
 
 def log_cfg(cfg: dict):
     """Function used to log the configuration file on mlflow.
@@ -38,23 +36,12 @@ def log_cfg(cfg: dict):
     mlflow.log_param("use_scheduler", use_scheduler)
     mlflow.log_param("learning_rate", learning_rate)
 
-def log_model_summary(model, data_sample):
+def log_model_summary(model):
     """Function used to log the model summary on mlflow.
 
     Args:
         model (torch.nn.Module): Model to log.
-        input_size (tuple): Input size of the model.
     """
-    GRAPH_MODELS = [GAT, GCN]
-    CNN_MODELS = [CnnBase]
-    if type(model) in GRAPH_MODELS:
-        model_summary = pyg_summary(model, data_sample[0].to(constants.DEVICE))
-    elif type(model) in CNN_MODELS:
-        model_summary = summary(model)
-    else:
-        return
-    
-    print(model_summary)
     with tempfile.TemporaryDirectory() as tmp_dir:
         path = Path(tmp_dir, "model_summary.txt")
         path.write_text(str(summary(model)))
