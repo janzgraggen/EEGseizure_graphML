@@ -4,39 +4,38 @@ name: "basic_gcn"
 description: "Two-layer GCN for seizure prediction"
 task: "v1"
 
-# Data (same splits as before)
+# Data 
 
-# Data
 datasets:
 -
   set: "train"
   split: [0, 0.8]
-  path: "project/data/train"
+  path: "/home/ogut/data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "distance"
-  edge_threshold: 1
+  G_construction: "correlation"
+  edge_threshold: 0.5
   shuffle: True
   num_workers: 4
 
 -
   set: "val"
   split: [0.8, 1]
-  path: "project/data/train"
+  path: "/home/ogut/data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "distance"
-  edge_threshold: 1
+  G_construction: "correlation"
+  edge_threshold: 0.5
   shuffle: False
   num_workers: 4
 
 -
   set: "test"
-  path: "project/data/test"
+  path: "/home/ogut/data/test"
   batch_size: 32
   tfm: "fft"
-  G_construction: "distance"
-  edge_threshold: 1
+  G_construction: "correlation"
+  edge_threshold: 0.5
   shuffle: False
   num_workers: 4
 

@@ -10,7 +10,7 @@ datasets:
 -
   set: "train"
   split: [0, 0.8]
-  path: "project/data/train"
+  path: "/home/ogut/data/train"
   batch_size: 32
   tfm: "fft"
   G_construction: "distance"
@@ -21,7 +21,7 @@ datasets:
 -
   set: "val"
   split: [0.8, 1]
-  path: "project/data/train"
+  path: "/home/ogut/data/train"
   batch_size: 32
   tfm: "fft"
   G_construction: "distance"
@@ -31,7 +31,7 @@ datasets:
 
 -
   set: "test"
-  path: "project/data/test"
+  path: "/home/ogut/data/test"
   batch_size: 32
   tfm: "fft"
   G_construction: "distance"
