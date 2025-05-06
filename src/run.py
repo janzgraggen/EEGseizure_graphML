@@ -15,7 +15,7 @@ matplotlib.use("Agg")  # Use non interactive backend
 
 # import modules
 from utils import set_seed, read_yml, choose_model
-from logs import log_cfg
+from logs import log_cfg, log_model_summary
 from dataloader import parse_datasets
 import constants
 
@@ -43,14 +43,17 @@ def main(args: argparse.Namespace):
 
     with mlflow.start_run(run_name=run_name):
 
+        run_id = mlflow.active_run().info.run_id
+
         model_cfg = cfg.get("model", {})
         model = choose_model(cfg=model_cfg)
 
-        print("Logging model...")
-        log_cfg(cfg=model_cfg)
-
         datasets_cfg = cfg.get("datasets", {})
         loader_train, loader_val, loader_test = parse_datasets(cfg=datasets_cfg)
+
+        print("Logging model...")
+        log_cfg(cfg=model_cfg)
+        log_model_summary(model=model)
 
         print("Training model...")
         model.fit(
@@ -64,7 +67,7 @@ def main(args: argparse.Namespace):
 
         model.predict(loader=loader_train)
 
-        model.create_submission(loader=loader_test)
+        model.create_submission(loader=loader_test, path=os.path.join(constants.SUBMISSION_DIR, str(run_id) + ".csv"))
 
 if __name__ == "__main__":
 
@@ -73,7 +76,6 @@ if __name__ == "__main__":
     parser.add_argument("--cfg", type=str, default="gcn/basic_gcn.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument("--run_id", type=str, default=None)
 
     args = parser.parse_args()
 

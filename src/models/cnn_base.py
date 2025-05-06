@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-04-29 by roduit -*-
+# -*- Last revision: 2025-05-06 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
@@ -16,8 +16,6 @@ from torch.utils.data import DataLoader
 # import files
 import constants
 from train import *
-
-
 class CnnBase(torch.nn.Module):
 
     def __init__(
