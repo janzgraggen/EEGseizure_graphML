@@ -140,6 +140,7 @@ def graph_construction(dataset, graph_cfg, cfg):
 
     graph_type = graph_cfg.get("type", None)
     distance_path = graph_cfg.get("path", constants.DISTANCE_3D_FILE)
+    distance_path = os.path.expandvars(distance_path)
     
     data_set = cfg.get("set", None)
 
