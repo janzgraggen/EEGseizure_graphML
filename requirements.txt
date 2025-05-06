@@ -10,3 +10,4 @@ pyyaml==6.0.2
 torcheval==0.0.7
 torch-geometric==2.6.1
 holoviews==1.20.2
+torchinfo==1.8.0

@@ -15,7 +15,7 @@ matplotlib.use("Agg")  # Use non interactive backend
 
 # import modules
 from utils import set_seed, read_yml, choose_model
-from logs import log_cfg
+from logs import log_cfg, log_model_summary
 from dataloader import parse_datasets
 import constants
 
@@ -46,11 +46,12 @@ def main(args: argparse.Namespace):
         model_cfg = cfg.get("model", {})
         model = choose_model(cfg=model_cfg)
 
-        print("Logging model...")
-        log_cfg(cfg=model_cfg)
-
         datasets_cfg = cfg.get("datasets", {})
         loader_train, loader_val, loader_test = parse_datasets(cfg=datasets_cfg)
+
+        print("Logging model...")
+        log_cfg(cfg=model_cfg)
+        log_model_summary(model=model, data_sample=loader_train)
 
         print("Training model...")
         model.fit(
@@ -70,7 +71,7 @@ if __name__ == "__main__":
 
     # Use argument
     parser = argparse.ArgumentParser(description="Run model computation")
-    parser.add_argument("--cfg", type=str, default="gcn/basic_gcn.yml"
+    parser.add_argument("--cfg", type=str, default="cnn/basic_cnn_local.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--run_id", type=str, default=None)
