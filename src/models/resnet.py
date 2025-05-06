@@ -18,9 +18,10 @@ from torch.utils.data import DataLoader
 # import files
 import constants
 from train import *
+from classic_base import ClassicBase
 
 
-class ResNetBaseline(nn.Module):
+class ResNetBaseline(ClassicBase):
     """
     Code taken from https://github.com/okrasolar/pytorch-timeseries/blob/master/src/models/resnet_baseline.py
     A PyTorch implementation of the ResNet Baseline
