@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-05-02 by janzgraggen -*-
+# -*- Last revision: 2025-05-06 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
@@ -120,8 +120,6 @@ class GraphBase(torch.nn.Module):
         )
         return accuracy, float(f1)
 
-        return accuracy, f1
-
 
 
     def _epoch(self, loader, train=True):
@@ -130,11 +128,10 @@ class GraphBase(torch.nn.Module):
         else:
             self.eval()
         running_loss = 0.0
-
         for batch in loader:
             batch = batch.to(self.device)
             out = self(batch)  # expects batch to be PyG Batch object
-            y = batch.y.unsqueeze(1).float()
+            y = batch.y.view(-1,1).float()
 
             loss = self.criterion(out, y)
 
@@ -160,7 +157,7 @@ class GraphBase(torch.nn.Module):
             for batch in loader:
 
                 # Unpack the batch
-                x_batch, x_ids = batch
+                x_batch, x_ids = batch[0], batch[1]
 
                 # permute the input tensor to match the expected shape
                 x_batch = x_batch.permute(0, 2, 1)

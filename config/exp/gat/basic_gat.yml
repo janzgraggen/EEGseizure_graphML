@@ -1,11 +1,11 @@
-# project/config/exp/graph/basic_gcn.yml
+# project/config/exp/graph/basic_gat.yml
 experiment: "gnn"
-name: "basic_gcn"
-description: "Two-layer GCN for seizure prediction"
+name: "basic_gat"
+description: "Two-layer GATv2 for seizure prediction"
 task: "v1"
 
-# Data 
 
+# Data
 datasets:
 -
   set: "train"
@@ -13,8 +13,11 @@ datasets:
   path: "/home/ogut/data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "correlation"
-  edge_threshold: 0.5
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
+
+  edge_threshold: 1
   shuffle: True
   num_workers: 4
 
@@ -24,8 +27,10 @@ datasets:
   path: "/home/ogut/data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "correlation"
-  edge_threshold: 0.5
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
+  edge_threshold: 1
   shuffle: False
   num_workers: 4
 
@@ -34,21 +39,24 @@ datasets:
   path: "/home/ogut/data/test"
   batch_size: 32
   tfm: "fft"
-  G_construction: "correlation"
-  edge_threshold: 0.5
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
+  edge_threshold: 1
   shuffle: False
   num_workers: 4
 
 # Model
 model:
-  name: "GCN"
+  name: "GAT"
   n_epochs: 20
   optimizer: "Adam"
   use_scheduler: False
   learning_rate: 0.001
   criterion: "BCEWithLogitsLoss"
   config:
-    in_channels:  # number of features per node (e.g. timepoints after FFT)
+    in_channels:  # number of features per node
       128
     hidden_channels: 64
-    # edge_index will be passed in code (fixed electrode graph)
+    # attention heads, dropout, etc., can be added here 
+    heads: 4
