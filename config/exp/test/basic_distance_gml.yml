@@ -1,7 +1,7 @@
 ---
-experiment: "correlation_gml"
-name: "basic_correlation_gml"
-description: "Basic graph ml models, with correlation graph construction"
+experiment: "distance_gml"
+name: "basic_distance_gml"
+description: "Basic graph ml models, with distance graph construction"
 task: "v1"
 
 # Data
@@ -9,32 +9,39 @@ datasets:
 -
   set: "train"
   split: [0, 0.8]
-  path: "project/data/train"
+  path: "../data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "correlation"
-  edge_threshold: 0.5
+  graph: 
+    type: "distance"
+    path: "../data/distances_3d.csv"
+
+  edge_threshold: 1
   shuffle: True
   num_workers: 4
 
 -
   set: "val"
   split: [0.8, 1]
-  path: "project/data/train"
+  path: "../data/train"
   batch_size: 32
   tfm: "fft"
-  G_construction: "correlation"
-  edge_threshold: 0.5
+  graph: 
+    type: "distance"
+    path: "../data/distances_3d.csv"
+  edge_threshold: 1
   shuffle: False
   num_workers: 4
 
 -
   set: "test"
-  path: "project/data/test"
+  path: "../data/test"
   batch_size: 32
   tfm: "fft"
-  G_construction: "correlation"
-  edge_threshold: 0.5
+  graph: 
+    type: "distance"
+    path: "../data/distances_3d.csv"
+  edge_threshold: 1
   shuffle: False
   num_workers: 4
 

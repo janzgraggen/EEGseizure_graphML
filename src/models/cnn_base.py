@@ -16,8 +16,6 @@ from torch.utils.data import DataLoader
 # import files
 import constants
 from train import *
-
-
 class CnnBase(torch.nn.Module):
 
     def __init__(

@@ -18,7 +18,6 @@ import constants
 TO BE TESTED...
 """
 
-
 class GAT(GraphBase):
     def __init__(self, in_channels: int, hidden_channels: int, heads=4):
         super().__init__()
@@ -27,6 +26,8 @@ class GAT(GraphBase):
         self.conv2 =  nngc.GATConv(hidden_channels * heads, hidden_channels)
         self.lin =    nn.Linear(hidden_channels, 1)
 
+        self.to(self.device)
+
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x = self.conv1(x, edge_index).relu()
@@ -34,16 +35,18 @@ class GAT(GraphBase):
         x =  nngc.global_mean_pool(x, batch)
         return self.lin(x)
     @staticmethod
-    def from_config(cfg):
-        return GAT(**cfg)
+    def from_config(model_cfg):
+        return GAT(**model_cfg)
 
 class GCN(GraphBase):
     def __init__(self, in_channels: int, hidden_channels: int):
         super().__init__()
         self.device = constants.DEVICE
         self.conv1 =  nngc.GCNConv(in_channels, hidden_channels)
-        self.conv2 =  nngc.nn.GCNConv(hidden_channels, hidden_channels)
+        self.conv2 =  nngc.GCNConv(hidden_channels, hidden_channels)
         self.lin = nn.Linear(hidden_channels, 1)
+
+        self.to(self.device)
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
@@ -53,6 +56,6 @@ class GCN(GraphBase):
         return self.lin(x)
     
     @staticmethod
-    def from_config(cfg):
-        return GCN(**cfg)
+    def from_config(model_cfg):
+        return GCN(**model_cfg)
     

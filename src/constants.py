@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-04-29 by roduit -*-
+# -*- Last revision: 2025-05-06 by Caspar -*-
 # -*- python version : 3.9.14 -*-
 # -*- Description: Constants used in the project -*-
 
@@ -30,6 +30,10 @@ if not SUBMISSION_DIR.exists():
     SUBMISSION_DIR.mkdir(parents=True, exist_ok=True)
 
 SUBMISSION_FILE = SUBMISSION_DIR / "submission.csv"
+
+DISTANCE_3D_FILE = DATA_DIR / "distance_3d.csv"
+
+CFG_DIR = ROOT_DIR / "config" / "exp"
 
 # ======================================================================================
 # =====                                MODEL PARAMS                                =====

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-05 by roduit -*-
+# -*- Last revision: 2025-05-06 by Caspar -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to load the project-*-
 
@@ -16,6 +16,8 @@ from tqdm import tqdm
 import networkx as nx
 import copy  # for deep graph copy
 from torch_geometric.utils.convert import from_networkx
+import torch
+import numpy as np
 
 # Import modules
 import constants
@@ -100,10 +102,12 @@ def load_data(cfg: dict) -> DataLoader:
         shuffle = False
 
     # Graph construction
-    G_construction = cfg.get("G_construction", None)
-    if G_construction is not None:
-        dataset = graph_construction(dataset, G_construction, cfg)
+    graph_cfg = cfg.get("graph", None)
+    
+    if graph_cfg is not None:
+        dataset = graph_construction(dataset, graph_cfg, cfg)
 
+        return dataset
 
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
@@ -132,10 +136,15 @@ def make_weights_for_balanced_classes(samples:Dataset, nclasses:int) -> list:
         weights[idx] = weight_per_class[sample_class]
     return weights
 
-def graph_construction(dataset, G_construction, cfg):
+def graph_construction(dataset, graph_cfg, cfg):
 
-    if G_construction == 'distance':
-        distance_df = pd.read_csv('project/data/distances_3d.csv')
+    graph_type = graph_cfg.get("type", None)
+    distance_path = graph_cfg.get("path", constants.DISTANCE_3D_FILE)
+    
+    data_set = cfg.get("set", None)
+
+    if graph_type == 'distance':
+        distance_df = pd.read_csv(distance_path)
         edge_threshold =  cfg.get("edge_threshold", None)
 
         adj_matrix = distance_df.pivot(index='from', columns='to', values='distance')
@@ -147,15 +156,25 @@ def graph_construction(dataset, G_construction, cfg):
         for i in range(len(dataset)):
             G = nx.from_numpy_array(adj_matrix)
 
-            for k, ch in enumerate(dataset.get_channels_names()):
-                G.add_node(k, signal=np.asarray(dataset[i][0].T[k], dtype=np.float32))
+            signals = np.asarray(dataset[i][0].T, dtype=np.float32)  # shape: (n_channels, signal_len)
+            for k in range(signals.shape[0]):
+                G.add_node(k)
+            G.graph['x'] = signals
 
-            distance_graphs.append((from_networkx(G), dataset[i][1]))
+            pyg_graph = from_networkx(G, group_node_attrs=None)
+            pyg_graph.x = torch.tensor(G.graph['x'], dtype=torch.float32)
+            
+            if data_set != "test":
+                pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.int64)
+            else:
+                pyg_graph.id = dataset[i][1]
+
+            distance_graphs.append(pyg_graph)
 
         return distance_graphs
 
 
-    elif G_construction == 'correlation':
+    elif graph_type == 'correlation':
 
         edge_threshold =  cfg.get("edge_threshold", None)
         correlation_graphs = []
@@ -167,10 +186,16 @@ def graph_construction(dataset, G_construction, cfg):
             np.fill_diagonal(adj_matrix, 0)
             G = nx.from_numpy_array(adj_matrix)
 
-            for k, ch in enumerate(dataset.get_channels_names()):
-                G.add_node(k, signal=np.asarray(dataset[i][0].T[k], dtype=np.float32))
+            signals = np.asarray(dataset[i][0].T, dtype=np.float32)  # shape: (n_channels, signal_len)
+            for k in range(signals.shape[0]):
+                G.add_node(k)
+            G.graph['x'] = signals
 
-            correlation_graphs.append((from_networkx(G), dataset[i][1]))
+            pyg_graph = from_networkx(G, group_node_attrs=None)
+            pyg_graph.x = torch.tensor(G.graph['x'], dtype=torch.float32)
+            pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.float32)
+
+            correlation_graphs.append(pyg_graph)
 
         return correlation_graphs
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Jan Zgraggen -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-05 by roduit -*-
+# -*- Last revision: 2025-05-06 by Caspar -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to run the project-*-
 
@@ -15,7 +15,7 @@ matplotlib.use("Agg")  # Use non interactive backend
 
 # import modules
 from utils import set_seed, read_yml, choose_model
-from logs import log_cfg
+from logs import log_cfg, log_model_summary
 from dataloader import parse_datasets
 import constants
 
@@ -43,14 +43,17 @@ def main(args: argparse.Namespace):
 
     with mlflow.start_run(run_name=run_name):
 
+        run_id = mlflow.active_run().info.run_id
+
         model_cfg = cfg.get("model", {})
         model = choose_model(cfg=model_cfg)
 
-        print("Logging model...")
-        log_cfg(cfg=model_cfg)
-
         datasets_cfg = cfg.get("datasets", {})
         loader_train, loader_val, loader_test = parse_datasets(cfg=datasets_cfg)
+
+        print("Logging model...")
+        log_cfg(cfg=model_cfg)
+        log_model_summary(model=model)
 
         print("Training model...")
         model.fit(
@@ -64,21 +67,18 @@ def main(args: argparse.Namespace):
 
         model.predict(loader=loader_train)
 
-        model.create_submission(loader=loader_test)
+        model.create_submission(loader=loader_test, path=os.path.join(constants.SUBMISSION_DIR, str(run_id) + ".csv"))
 
 if __name__ == "__main__":
 
-    cfg_path = "project/config/exp/"
-
     # Use argument
-    parser = argparse.ArgumentParser(description="Run grade computation")
-    parser.add_argument("--cfg", type=str, default="basic_cnn_local_upsample.yml"
+    parser = argparse.ArgumentParser(description="Run model computation")
+    parser.add_argument("--cfg", type=str, default="gcn/basic_gcn.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument("--run_id", type=str, default=None)
 
     args = parser.parse_args()
 
-    args.cfg = cfg_path + args.cfg
+    args.cfg = os.path.join(constants.CFG_DIR, args.cfg)
 
     main(args=args)

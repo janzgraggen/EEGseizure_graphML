@@ -9,13 +9,14 @@ Ecole Polytechnique Fédérale de Lausanne
 EE452 - Netork Machine Learning
 </div> 
 
-# Project
+# Graph-based EEG Analysis
 
 ## Table of Contents
 
 - [Project Structure](#project-structure)
 - [Data Structure](#data-structure)
 - [Connection to SCITAS](#connection-to-scitas)
+- [Mlflow](#mlflow)
 - [Contributors](#contributors)
 
 ## Project Structure
@@ -52,6 +53,12 @@ The recommanded structure for the data is the following:
     └── signals
 ```
 
+### Copy data to SCITAS cluster
+If you need to copy data to the cluser (for instance distances_3d.csv), use the following command
+```
+scp path/to/data/distances_3d.csv username@izar.hpc.epfl.ch:/home/username/EE452-Network-Machine-Learning/project/data
+```
+and replace `path/to/data/` with your actual path and `username` with your Gaspar ID.
 
 
 ## Connection to SCITAS
@@ -67,6 +74,27 @@ This second part is what you have to follow when you want to run a job inside th
 - To run a test, you simply need to do ```sbatch run.job --cfg "cfg_file.yml" --seed seed_number --run_id run_id``` from where the file is.
 
 <!-- NOT FUNCTIONAL - If you want to run a so-called interactive job (basically one where you can directly see the outputs of your functions in the terminal), run ```Sinteract -p gpu -g gpu:1```. This creates a terminal directly on the node, which means that to execute code you have to run (for example in the src/ folder) ```python3 run.py --kwargs```.-->
+
+## Mlflow
+This project uses the [Mlflow library](https://mlflow.org) to keep track of the experiment.
+
+### Lauching Mlflow server
+By default, the experiments are saved in `./mlflow` folder. To see the results, in the terminal use the following command:
+```
+ mlflow ui --backend-store-uri ./project/mlruns
+```
+
+Then in your favorite browser, go to http://127.0.0.1:5000
+
+### Recover experiment from scitas
+When running a model on scitas, you can easily recover the experiment to your local machine by doing:
+
+```
+scp username@izar.hpc.epfl.ch:/home/username/EE452-Network-Machine-Learning/project/mlruns/path/to/experiment ~/path/to/destination
+```
+
+and replacing `/path/to/experiment` with the desired experiment path, `username` by your Gaspar ID and `~/path/to/destination` with the path to your destination location.
+
 
 
 ## Contributors
