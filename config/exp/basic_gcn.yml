@@ -33,6 +33,18 @@ datasets:
   shuffle: False
   num_workers: 4
 
+-
+  set: "test"
+  path: "project/data/test"
+  batch_size: 32
+  tfm: "fft"
+  graph: 
+    type: "distance"
+    path: "project/data/distances_3d.csv"
+  edge_threshold: 1
+  shuffle: False
+  num_workers: 4
+
 # Model
 model:
   name: "GCN"
@@ -43,6 +55,6 @@ model:
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)
-      128
+      354
     hidden_channels: 64
     # edge_index will be passed in code (fixed electrode graph)

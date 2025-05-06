@@ -18,7 +18,6 @@ import constants
 TO BE TESTED...
 """
 
-
 class GAT(GraphBase):
     def __init__(self, in_channels: int, hidden_channels: int, heads=4):
         super().__init__()
@@ -26,6 +25,8 @@ class GAT(GraphBase):
         self.conv1 =  nngc.GATConv(in_channels, hidden_channels, heads=heads)
         self.conv2 =  nngc.GATConv(hidden_channels * heads, hidden_channels)
         self.lin =    nn.Linear(hidden_channels, 1)
+
+        self.to(self.device)
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch
@@ -42,8 +43,10 @@ class GCN(GraphBase):
         super().__init__()
         self.device = constants.DEVICE
         self.conv1 =  nngc.GCNConv(in_channels, hidden_channels)
-        self.conv2 =  nngc.nn.GCNConv(hidden_channels, hidden_channels)
+        self.conv2 =  nngc.GCNConv(hidden_channels, hidden_channels)
         self.lin = nn.Linear(hidden_channels, 1)
+
+        self.to(self.device)
 
     def forward(self, data):
         x, edge_index, batch = data.x, data.edge_index, data.batch

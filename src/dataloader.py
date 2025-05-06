@@ -107,6 +107,7 @@ def load_data(cfg: dict) -> DataLoader:
     if graph_cfg is not None:
         dataset = graph_construction(dataset, graph_cfg, cfg)
 
+        return dataset
 
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
@@ -139,6 +140,8 @@ def graph_construction(dataset, graph_cfg, cfg):
 
     graph_type = graph_cfg.get("type", None)
     distance_path = graph_cfg.get("path", constants.DISTANCE_3D_FILE)
+    data_set = cfg.get("set", None)
+
     if graph_type == 'distance':
         distance_df = pd.read_csv(distance_path)
         edge_threshold =  cfg.get("edge_threshold", None)
@@ -155,12 +158,17 @@ def graph_construction(dataset, graph_cfg, cfg):
             signals = np.asarray(dataset[i][0].T, dtype=np.float32)  # shape: (n_channels, signal_len)
             for k in range(signals.shape[0]):
                 G.add_node(k)
-            G.graph['signal'] = signals
+            G.graph['x'] = signals
 
             pyg_graph = from_networkx(G, group_node_attrs=None)
-            pyg_graph.signal = torch.tensor(G.graph['signal'], dtype=torch.float32)
+            pyg_graph.x = torch.tensor(G.graph['x'], dtype=torch.float32)
+            
+            if data_set != "test":
+                pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.int64)
+            else:
+                pyg_graph.id = dataset[i][1]
 
-            distance_graphs.append((pyg_graph, dataset[i][1]))
+            distance_graphs.append(pyg_graph)
 
         return distance_graphs
 
@@ -180,12 +188,13 @@ def graph_construction(dataset, graph_cfg, cfg):
             signals = np.asarray(dataset[i][0].T, dtype=np.float32)  # shape: (n_channels, signal_len)
             for k in range(signals.shape[0]):
                 G.add_node(k)
-            G.graph['signal'] = signals
+            G.graph['x'] = signals
 
             pyg_graph = from_networkx(G, group_node_attrs=None)
-            pyg_graph.signal = torch.tensor(G.graph['signal'], dtype=torch.float32)
+            pyg_graph.x = torch.tensor(G.graph['x'], dtype=torch.float32)
+            pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.float32)
 
-            correlation_graphs.append((pyg_graph, dataset[i][1]))
+            correlation_graphs.append(pyg_graph)
 
         return correlation_graphs
 

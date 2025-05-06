@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     # Use argument
     parser = argparse.ArgumentParser(description="Run grade computation")
-    parser.add_argument("--cfg", type=str, default="basic_cnn_local_upsample.yml"
+    parser.add_argument("--cfg", type=str, default="basic_gcn.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--run_id", type=str, default=None)
