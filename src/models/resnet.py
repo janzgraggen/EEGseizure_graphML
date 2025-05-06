@@ -19,56 +19,45 @@ import constants
 from train import *
 
 
-class AlexNetTimeSeries(nn.Module):
-    def __init__(self, num_channels=19, num_classes=2):
-        super(AlexNetTimeSeries, self).__init__()
-        
-        self.features = nn.Sequential(
-            nn.Conv1d(num_channels, 64, kernel_size=11, stride=4, padding=2),  # (64, L_out)
-            nn.ReLU(inplace=True),
-            nn.MaxPool1d(kernel_size=3, stride=2),
-            
-            nn.Conv1d(64, 192, kernel_size=5, padding=2),
-            nn.ReLU(inplace=True),
-            nn.MaxPool1d(kernel_size=3, stride=2),
-            
-            nn.Conv1d(192, 384, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            
-            nn.Conv1d(384, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            
-            nn.Conv1d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool1d(kernel_size=3, stride=2),
-        )
-        
-        self.classifier = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(256 * self._get_flattened_size(), 4096),
-            nn.ReLU(inplace=True),
-            
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(inplace=True),
-            
-            nn.Linear(4096, num_classes),
-        )
-    
-    def _get_flattened_size(self):
-        # Dummy forward pass to calculate flattened size dynamically
-        with torch.no_grad():
-            x = torch.zeros(1, 19, 1000)  # assuming sequence_length=1000, adjust as needed
-            x = self.features(x)
-            return x.shape[1] * x.shape[2]
-    
-    def forward(self, x):
-        print(x.shape)
-        x = self.features(x)
-        x = torch.flatten(x, 1)  # flatten all but batch dimension
-        x = self.classifier(x)
-        return x
+class ResNetBaseline(nn.Module):
+    """
+    Code taken from https://github.com/okrasolar/pytorch-timeseries/blob/master/src/models/resnet_baseline.py
+    A PyTorch implementation of the ResNet Baseline
+    From https://arxiv.org/abs/1909.04939
 
+    Attributes
+    ----------
+    sequence_length:
+        The size of the input sequence
+    mid_channels:
+        The 3 residual blocks will have as output channels:
+        [mid_channels, mid_channels * 2, mid_channels * 2]
+    num_pred_classes:
+        The number of output classes
+    """
+
+    def __init__(self, in_channels: int, mid_channels: int = 64,
+                 num_pred_classes: int = 1) -> None:
+        super().__init__()
+
+        # for easier saving and loading
+        self.input_args = {
+            'in_channels': in_channels,
+            'num_pred_classes': num_pred_classes
+        }
+
+        self.layers = nn.Sequential(*[
+            ResNetBlock(in_channels=in_channels, out_channels=mid_channels),
+            ResNetBlock(in_channels=mid_channels, out_channels=mid_channels * 2),
+            ResNetBlock(in_channels=mid_channels * 2, out_channels=mid_channels * 2),
+
+        ])
+        self.final = nn.Linear(mid_channels * 2, num_pred_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:  # type: ignore
+        x = self.layers(x)
+        return self.final(x.mean(dim=-1))
+    
     def fit(
         self,
         loader_tr,
@@ -240,3 +229,34 @@ class AlexNetTimeSeries(nn.Module):
         """
 
         return CnnBase(**model_cfg)
+
+
+class ResNetBlock(nn.Module):
+
+    def __init__(self, in_channels: int, out_channels: int) -> None:
+        super().__init__()
+
+        channels = [in_channels, out_channels, out_channels, out_channels]
+        kernel_sizes = [8, 5, 3]
+
+        self.layers = nn.Sequential(*[
+            ConvBlock(in_channels=channels[i], out_channels=channels[i + 1],
+                      kernel_size=kernel_sizes[i], stride=1) for i in range(len(kernel_sizes))
+        ])
+
+        self.match_channels = False
+        if in_channels != out_channels:
+            self.match_channels = True
+            self.residual = nn.Sequential(*[
+                Conv1dSamePadding(in_channels=in_channels, out_channels=out_channels,
+                                  kernel_size=1, stride=1),
+                nn.BatchNorm1d(num_features=out_channels)
+            ])
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:  # type: ignore
+
+        if self.match_channels:
+            return self.layers(x) + self.residual(x)
+        return self.layers(x)
+
+    
