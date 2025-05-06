@@ -21,9 +21,9 @@ from train import *
 from classic_base import ClassicBase
 
 
-class ResNetBaseline(ClassicBase):
+class TLENET(ClassicBase):
     """
-    Code taken from https://github.com/hfawaz/dl-4-tsc/blob/master/classifiers/resnet.py
+    Code taken from https://github.com/hfawaz/dl-4-tsc/blob/master/classifiers/tlenet.py
     and adapted using Pytorch instead of Keras
 
     Attributes
