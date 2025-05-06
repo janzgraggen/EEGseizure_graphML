@@ -63,6 +63,7 @@ class AlexNetTimeSeries(nn.Module):
             return x.shape[1] * x.shape[2]
     
     def forward(self, x):
+        print(x.shape)
         x = self.features(x)
         x = torch.flatten(x, 1)  # flatten all but batch dimension
         x = self.classifier(x)
