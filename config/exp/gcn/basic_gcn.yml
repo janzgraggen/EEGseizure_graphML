@@ -40,7 +40,7 @@ datasets:
   edge_threshold: 0.5
   graph: 
     type: "distance"
-      path: "$HOME/EE452-Network-Machine-Learning/project/data/distances_3d.csv"
+    path: "$HOME/EE452-Network-Machine-Learning/project/data/distances_3d.csv"
   edge_threshold: 1
   shuffle: False
   num_workers: 4
