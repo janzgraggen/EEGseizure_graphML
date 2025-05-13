@@ -23,7 +23,7 @@ class CNN(BaseModel):
         self.layers = None
         self._build_model()
     
-    def _build_model(self, padding='valid'):
+    def _build_model(self):
         with torch.no_grad():
             dummy_input = torch.zeros(1, self.input_shape[0], self.input_shape[1])
             feature_extractor = torch.nn.Sequential(

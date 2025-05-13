@@ -49,23 +49,6 @@ def parse_datasets(cfg: dict) -> tuple[DataLoader, DataLoader, DataLoader]:
             raise ValueError(f"Unknown dataset type: {set_type}")
     return loader_train, loader_val, loader_test
 
-class ReshapeForConvLSTM(torch.utils.data.Dataset):
-    def __init__(self, base_dataset, time_steps=3, window_size=250):
-        self.base = base_dataset
-        self.time_steps = time_steps
-        self.window_size = window_size
-
-    def __len__(self):
-        return len(self.base)
-
-    def __getitem__(self, idx):
-        x, y = self.base[idx]  # or (x, id) if test set
-        # x: [19, 3000]
-        x = x = x.reshape(19, self.time_steps, self.window_size)
-        x = x.transpose(1, 0, 2)
-        x = np.expand_dims(x, axis=1)
-        return x, y
-
 def load_data(cfg: dict) -> DataLoader:
     """Load the data from the path and return a DataLoader.
 
@@ -82,7 +65,9 @@ def load_data(cfg: dict) -> DataLoader:
     clips_path = os.path.join(path, "segments.parquet")
     clips = pd.read_parquet(clips_path)
 
-    # clips = split_segments(clips)
+    time_window = cfg.get("time_window", 12)
+    if time_window != 12:
+        clips = split_segments(clips, time_window)
 
     split = cfg.get("split", None)
 
@@ -108,11 +93,6 @@ def load_data(cfg: dict) -> DataLoader:
     dataset = EEGDataset(
         clips, signals_root=path, signal_transform=tfm, prefetch=True, return_id=get_id
     )
-
-    if cfg.get("lstm", False):
-        time_steps = cfg.get("time_steps", 3)
-        window_size = cfg.get("window_size", 250)
-        dataset = ReshapeForConvLSTM(dataset, time_steps=time_steps, window_size=window_size)
     sampler = None
 
     if sampling:
@@ -241,18 +221,18 @@ def get_transform(tfm_name: str) -> callable:
     else:
         return None
 
-def split_segments(clips):
+def split_segments(clips, time_window=3):
     expanded_clips = []
 
     for _, row in clips.reset_index().iterrows():
         start_time = row['start_time']
         end_time = row['end_time']
 
-        num_segments = int(np.ceil((end_time - start_time) / 3.0))
+        num_segments = int(np.ceil((end_time - start_time) / time_window))
         
         for i in range(num_segments):
-            segment_start = start_time + i * 3
-            segment_end = min(start_time + (i + 1) * 3, end_time)
+            segment_start = start_time + i * time_window
+            segment_end = min(start_time + (i + 1) * time_window, end_time)
             
             new_row = row.copy()
             new_row['start_time'] = segment_start

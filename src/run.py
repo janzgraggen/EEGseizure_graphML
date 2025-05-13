@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     # Use argument
     parser = argparse.ArgumentParser(description="Run model computation")
-    parser.add_argument("--cfg", type=str, default="lstm/lstm.yml"
+    parser.add_argument("--cfg", type=str, default="cnn/cnn_test.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
 

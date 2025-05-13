@@ -15,6 +15,7 @@ import yaml
 # Import modules
 from models.graph_models import GAT, GCN
 from models.cnn import CNN
+from models.fcn import FCN
 
 
 def set_seed(seed: int = 42):
@@ -69,6 +70,8 @@ def choose_model(cfg: dict) -> torch.nn.Module:
     if model_name == "CNN":
         return CNN.from_config(model_cfg=model_cfg)
     
+    elif model_name == "FCN":
+        return FCN.from_config(model_cfg=model_cfg)
     elif model_name == "GAT":
         return GAT.from_config(model_cfg=model_cfg)
     
