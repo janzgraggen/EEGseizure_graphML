@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Jan Zgraggen -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-06 by roduit -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-13 by roduit -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Functions to run the project-*-
 
 # Import libraries
@@ -60,7 +60,7 @@ def main(args: argparse.Namespace):
             loader_train,
             loader_val,
             num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
-            learning_rate=model_cfg.get("learning_rate", constants.LEARNING_RATE),
+            learning_rate=float(model_cfg.get("learning_rate", constants.LEARNING_RATE)),
             criterion_name=model_cfg.get("criterion", constants.CRITERION),
             optimizer_name=cfg.get("optimizer", constants.OPTIMIZER),
         )
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     # Use argument
     parser = argparse.ArgumentParser(description="Run model computation")
-    parser.add_argument("--cfg", type=str, default="gcn/basic_gcn.yml"
+    parser.add_argument("--cfg", type=str, default="lstm/lstm.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
 

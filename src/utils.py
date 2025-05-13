@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-06 by roduit -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-13 by roduit -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Utils functions -*-
 
 # Import libraries
@@ -13,8 +13,8 @@ import torch
 import yaml
 
 # Import modules
-from models.cnn_base import CnnBase
 from models.graph_models import GAT, GCN
+from models.cnn import CNN
 
 
 def set_seed(seed: int = 42):
@@ -66,8 +66,8 @@ def choose_model(cfg: dict) -> torch.nn.Module:
     """
     model_name = cfg.get("name")
     model_cfg = cfg.get("config", {})
-    if model_name == "CnnBase":
-        return CnnBase.from_config(model_cfg=model_cfg)
+    if model_name == "CNN":
+        return CNN.from_config(model_cfg=model_cfg)
     
     elif model_name == "GAT":
         return GAT.from_config(model_cfg=model_cfg)

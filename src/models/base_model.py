@@ -1,71 +1,39 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-05-06 by roduit -*-
-# -*- python version : 3.11.11 -*-
-# -*- Description: Functions to train models-*-
+# -*- Last revision: 2025-05-13 by roduit -*-
+# -*- python version : 3.10.4 -*-
+# -*- Description: Implement the base model-*-
 
 # Import libraries
 import torch
 from tqdm import tqdm
 import pandas as pd
 import mlflow
+import tempfile
+import os
 from torcheval.metrics.functional import binary_f1_score
 from torch.utils.data import DataLoader
+from sklearn.metrics import confusion_matrix
 
 # import files
 import constants
 from train import *
-class CnnBase(torch.nn.Module):
+from plots import plot_cm_matrix
 
+class BaseModel(torch.nn.Module):
     def __init__(
         self,
-        layers,
-        input_shape=19,
-        output_shape=2,
-        kernel_size=5,
         device=constants.DEVICE,
     ):
         super().__init__()
-        self.input_shape = input_shape
-        self.output_shape = output_shape
-        self.layer_configs = layers
-        self.kernel_size = kernel_size
-        self.device = device
-
-        layers = []
-        in_channels = self.input_shape
-
-        for layer_cfg in self.layer_configs:
-            out_channels = layer_cfg["out_channels_multiplier"] * self.input_shape
-            pooling_type = layer_cfg.get("pooling", "max")
-
-            layers.append(
-                torch.nn.Conv1d(
-                    in_channels, out_channels, self.kernel_size, padding="same"
-                )
-            )
-            layers.append(torch.nn.BatchNorm1d(out_channels))
-            layers.append(torch.nn.ReLU())
-
-            if pooling_type == "max":
-                layers.append(torch.nn.MaxPool1d(2))
-            elif pooling_type == "adaptiveavg":
-                layers.append(torch.nn.AdaptiveAvgPool1d(1))
-            else:
-                raise ValueError(f"Unknown pooling type: {pooling_type}")
-
-            in_channels = out_channels
-
-        layers.append(torch.nn.Flatten())
-        layers.append(torch.nn.Linear(in_channels, self.output_shape))
-
-        self.layers = torch.nn.Sequential(*layers)
-
         self.device = device
         self.to(self.device)
+        self.layers = None
 
     def forward(self, x):
+        if self.layers is None:
+            raise NotImplementedError("Layers not defined in the model.")
         return self.layers(x)
 
     def fit(
@@ -76,19 +44,29 @@ class CnnBase(torch.nn.Module):
         learning_rate=constants.LEARNING_RATE,
         criterion_name=constants.CRITERION,
         optimizer_name=constants.OPTIMIZER,
+        use_scheduler=True,
     ):
         self.train_losses = []
         self.val_losses = []
 
         self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
         self.criterion = get_criterion(criterion_name)
+        self.use_scheduler = use_scheduler
+
+        if self.use_scheduler:
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer,
+                mode='min',         
+                factor=0.5,           
+                patience=3,
+            )
 
         pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
         for e in range(num_epochs):
             # Training
             train_loss = self._epoch(loader_tr, train=True)
             self.train_losses.append(train_loss)
-            train_accuracy, train_f1_score = self.predict(loader_tr)
+            train_accuracy, train_f1_score, cm_train = self.predict(loader_tr)
 
             mlflow.log_metric("train_f1_score ", train_f1_score, step=e + 1)
             mlflow.log_metric("train_accuracy", train_accuracy, step=e + 1)
@@ -97,7 +75,27 @@ class CnnBase(torch.nn.Module):
             # Validation
             val_loss = self._epoch(loader_val, train=False)
             self.val_losses.append(val_loss)
-            val_accuracy, val_f1_score = self.predict(loader_val)
+            val_accuracy, val_f1_score, cm_val = self.predict(loader_val)
+            
+            if self.use_scheduler:
+                self.scheduler.step(val_loss)
+                current_lr = self.scheduler.get_last_lr()[0]
+                mlflow.log_metric("learning_rate", current_lr, step=e + 1)
+
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                os.makedirs(tmp_dir, exist_ok=True)
+                plot_cm_matrix(
+                    cm_train,
+                    set="train",
+                    file_pth=tmp_dir,
+                    epoch=e + 1,
+                )
+                plot_cm_matrix(
+                    cm_val,
+                    set="val",
+                    file_pth=tmp_dir,
+                    epoch=e + 1,
+                )
             
             mlflow.log_metric("val_f1_score ", val_f1_score, step=e + 1)
             mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
@@ -122,7 +120,7 @@ class CnnBase(torch.nn.Module):
             x = x.float().to(self.device)
             x = x.permute(0, 2, 1)
             logits = self(x)
-            predictions = (logits > 0).int()
+            predictions = (logits > 0).int().squeeze(1).cpu()
         return predictions
 
     def predict(self, loader):
@@ -159,7 +157,14 @@ class CnnBase(torch.nn.Module):
             all_predictions,
             all_targets
         )
-        return accuracy, float(f1)
+        
+        # Compute confusion matrix
+        cm = confusion_matrix(
+            all_predictions.cpu(),
+            all_targets.cpu(),
+        )
+
+        return accuracy, float(f1), cm
 
     def _epoch(self, loader, train=True):
 
@@ -178,11 +183,12 @@ class CnnBase(torch.nn.Module):
             # Forward pass
             logits = self(x_batch)
             loss = self.criterion(logits, y_batch)
-
-            # Backward pass
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+            
+            if train:
+                # Backward pass
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
             running_loss += loss.item()
 
@@ -204,17 +210,10 @@ class CnnBase(torch.nn.Module):
                 # Unpack the batch
                 x_batch, x_ids = batch
 
-                # permute the input tensor to match the expected shape
-                x_batch = x_batch.permute(0, 2, 1)
-
                 # Move to device
                 x_batch = x_batch.float().to(self.device)
 
-                # Perform the forward pass to get the model's output logits
-                logits = self(x_batch)
-
-                # Convert logits to predictions.
-                predictions = (logits > 0).int().cpu().numpy()
+                predictions = self.predict_batch(x_batch)
 
                 all_predictions.extend(predictions.flatten().tolist())
                 all_ids.extend(list(x_ids))
@@ -224,16 +223,3 @@ class CnnBase(torch.nn.Module):
 
         print(f"Submission file created at {path}")
         return submission_df
-
-    @staticmethod
-    def from_config(model_cfg):
-        """Create a model from a configuration dictionary.
-
-        Args:
-            model_cfg (dict): Configuration dictionnary
-
-        Returns:
-            CnnBase: The model
-        """
-
-        return CnnBase(**model_cfg)

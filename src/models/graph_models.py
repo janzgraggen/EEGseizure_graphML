@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-05-06 by roduit -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-13 by roduit -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
 # Import libraries

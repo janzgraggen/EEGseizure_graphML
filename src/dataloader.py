@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-06 by roduit -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-13 by roduit -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Functions to load the project-*-
 
 # Import librairies
 import pandas as pd
-from holoviews.operation import threshold
 from seiz_eeg.dataset import EEGDataset
 from torch.utils.data import DataLoader, Dataset
 import os
 from torch.utils.data.sampler import WeightedRandomSampler
 from tqdm import tqdm
 import networkx as nx
-import copy  # for deep graph copy
 from torch_geometric.utils.convert import from_networkx
 import torch
 import numpy as np
@@ -51,6 +49,22 @@ def parse_datasets(cfg: dict) -> tuple[DataLoader, DataLoader, DataLoader]:
             raise ValueError(f"Unknown dataset type: {set_type}")
     return loader_train, loader_val, loader_test
 
+class ReshapeForConvLSTM(torch.utils.data.Dataset):
+    def __init__(self, base_dataset, time_steps=3, window_size=250):
+        self.base = base_dataset
+        self.time_steps = time_steps
+        self.window_size = window_size
+
+    def __len__(self):
+        return len(self.base)
+
+    def __getitem__(self, idx):
+        x, y = self.base[idx]  # or (x, id) if test set
+        # x: [19, 3000]
+        x = x = x.reshape(19, self.time_steps, self.window_size)
+        x = x.transpose(1, 0, 2)
+        x = np.expand_dims(x, axis=1)
+        return x, y
 
 def load_data(cfg: dict) -> DataLoader:
     """Load the data from the path and return a DataLoader.
@@ -67,6 +81,8 @@ def load_data(cfg: dict) -> DataLoader:
         raise ValueError("No data path provided in the configuration file.")
     clips_path = os.path.join(path, "segments.parquet")
     clips = pd.read_parquet(clips_path)
+
+    # clips = split_segments(clips)
 
     split = cfg.get("split", None)
 
@@ -93,6 +109,10 @@ def load_data(cfg: dict) -> DataLoader:
         clips, signals_root=path, signal_transform=tfm, prefetch=True, return_id=get_id
     )
 
+    if cfg.get("lstm", False):
+        time_steps = cfg.get("time_steps", 3)
+        window_size = cfg.get("window_size", 250)
+        dataset = ReshapeForConvLSTM(dataset, time_steps=time_steps, window_size=window_size)
     sampler = None
 
     if sampling:
@@ -214,5 +234,39 @@ def get_transform(tfm_name: str) -> callable:
     """
     if tfm_name == "fft":
         return fft_filtering
+    elif tfm_name == "time":
+        return time_filtering
+    elif tfm_name == "clean":
+        return clean_input
     else:
         return None
+
+def split_segments(clips):
+    expanded_clips = []
+
+    for _, row in clips.reset_index().iterrows():
+        start_time = row['start_time']
+        end_time = row['end_time']
+
+        num_segments = int(np.ceil((end_time - start_time) / 3.0))
+        
+        for i in range(num_segments):
+            segment_start = start_time + i * 3
+            segment_end = min(start_time + (i + 1) * 3, end_time)
+            
+            new_row = row.copy()
+            new_row['start_time'] = segment_start
+            new_row['end_time'] = segment_end
+            new_row['sub_seg'] = i
+            
+            # Append the new row to the expanded list
+            expanded_clips.append(new_row)
+        
+
+    # Convert the list of expanded rows back into a DataFrame
+    expanded_clips_df = pd.DataFrame(expanded_clips)
+
+    # Add sub_seg to index
+    expanded_clips_df.set_index(['patient','session', 'segment','sub_seg'], inplace=True)
+
+    return expanded_clips_df
