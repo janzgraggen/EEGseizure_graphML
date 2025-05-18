@@ -7,8 +7,21 @@
 #SBATCH --mem=16G
 #SBATCH --output run-log-%J.out
 
+CFG=$1
+SEED=$2
+
 module load gcc python
 
 source $HOME/venvs/venv_project/bin/activate
 
-python3 $HOME/EE452-Network-Machine-Learning/project/src/run.py
+CMD="python3 $HOME/EE452-Network-Machine-Learning/project/src/run.py"
+
+if [ -n "$CFG" ]; then
+    CMD="$CMD --cfg $CFG"
+fi
+
+if [ -n "$SEED" ]; then
+    CMD="$CMD --seed $SEED"
+fi
+
+eval $CMD
