@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-06 by Caspar -*-
+# -*- Last revision: 2025-05-18 by Caspar -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Utils functions -*-
 
@@ -14,6 +14,7 @@ import yaml
 
 # Import modules
 from models.cnn_base import CnnBase
+from models.resnet import ResNet
 from models.graph_models import GAT, GCN
 
 
@@ -30,6 +31,7 @@ def set_seed(seed: int = 42):
     if torch.backends.mps.is_available():
         torch.mps.manual_seed(0)
     elif torch.cuda.is_available():
+
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
@@ -68,6 +70,9 @@ def choose_model(cfg: dict) -> torch.nn.Module:
     model_cfg = cfg.get("config", {})
     if model_name == "CnnBase":
         return CnnBase.from_config(model_cfg=model_cfg)
+
+    if model_name == "ResNet":
+        return ResNet.from_config(model_cfg=model_cfg)
     
     elif model_name == "GAT":
         return GAT.from_config(model_cfg=model_cfg)
