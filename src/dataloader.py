@@ -7,22 +7,17 @@
 
 # Import librairies
 import pandas as pd
-from PyQt5.sip import array
-from holoviews.operation import threshold
 from seiz_eeg.dataset import EEGDataset
 from torch.utils.data import DataLoader, Dataset
 import os
 from torch.utils.data.sampler import WeightedRandomSampler
 from tqdm import tqdm
-import networkx as nx
 import copy  # for deep graph copy
 import torch_geometric
 from torch_geometric.utils import dense_to_sparse
 from torch_geometric.utils.convert import from_networkx
 import torch
 import numpy as np
-from collections import Counter
-import random
 # Import modules
 import constants
 from transform_func import *
@@ -70,10 +65,6 @@ def load_data(cfg: dict) -> DataLoader:
         raise ValueError("No data path provided in the configuration file.")
     clips_path = os.path.join(path, "segments.parquet")
     clips = pd.read_parquet(clips_path)
-
-    time_window = cfg.get("time_window", 12)
-    if time_window != 12:
-        clips = split_segments(clips, time_window)
 
     split = cfg.get("split", None)
 
