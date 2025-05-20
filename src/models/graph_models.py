@@ -30,7 +30,7 @@ class GAT(GraphBase):
         self.to(self.device)
 
     def forward(self, data):
-        x, edge_index, batch = data.x, torch.stack(data.edge_index), data.batch
+        x, edge_index, batch = data.x, data.edge_index, data.batch
         x = self.conv1(x, edge_index).relu()
         x = self.conv2(x, edge_index).relu()
         x =  nngc.global_mean_pool(x, batch)
