@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-06 by roduit -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-20 by roduit -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Functions to log parameters on Mlflow-*-
 
 # Import libraries
 import mlflow
 from torchinfo import summary
-from models.graph_models import GAT, GCN
-from models.cnn_base import CnnBase
 import tempfile
 from pathlib import Path
 
@@ -24,7 +22,7 @@ def log_cfg(cfg: dict):
     """
 
     model_name = cfg.get("name", None)
-    n_epochs = cfg.get("num_epochs", None)
+    n_epochs = cfg.get("n_epochs", None)
     optimizer = cfg.get("optimizer", None)
     use_scheduler = cfg.get("use_scheduler", None)
     learning_rate = cfg.get("learning_rate", None)

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-06 by roduit -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-20 by roduit -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Functions to load the project-*-
 
 # Import librairies
@@ -55,7 +55,6 @@ def parse_datasets(cfg: dict) -> tuple[DataLoader, DataLoader, DataLoader]:
             raise ValueError(f"Unknown dataset type: {set_type}")
     return loader_train, loader_val, loader_test
 
-
 def load_data(cfg: dict) -> DataLoader:
     """Load the data from the path and return a DataLoader.
 
@@ -71,6 +70,10 @@ def load_data(cfg: dict) -> DataLoader:
         raise ValueError("No data path provided in the configuration file.")
     clips_path = os.path.join(path, "segments.parquet")
     clips = pd.read_parquet(clips_path)
+
+    time_window = cfg.get("time_window", 12)
+    if time_window != 12:
+        clips = split_segments(clips, time_window)
 
     split = cfg.get("split", None)
 
@@ -96,7 +99,6 @@ def load_data(cfg: dict) -> DataLoader:
     dataset = EEGDataset(
         clips, signals_root=path, signal_transform=tfm, prefetch=True, return_id=get_id
     )
-
     sampler = None
 
     if sampling:
@@ -231,6 +233,10 @@ def get_transform(tfm_name: str) -> callable:
     """
     if tfm_name == "fft":
         return fft_filtering
+    elif tfm_name == "time":
+        return time_filtering
+    elif tfm_name == "clean":
+        return clean_input
     else:
         return None
 
