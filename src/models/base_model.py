@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-05-13 by roduit -*-
+# -*- Last revision: 2025-05-20 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Implement the base model-*-
 
@@ -28,7 +28,6 @@ class BaseModel(torch.nn.Module):
     ):
         super().__init__()
         self.device = device
-        self.to(self.device)
         self.layers = None
 
     def forward(self, x):
@@ -48,6 +47,8 @@ class BaseModel(torch.nn.Module):
     ):
         self.train_losses = []
         self.val_losses = []
+
+        self.to(self.device)
 
         self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
         self.criterion = get_criterion(criterion_name)

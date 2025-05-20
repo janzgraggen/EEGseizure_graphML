@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-05-13 by roduit -*-
+# -*- Last revision: 2025-05-20 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Implement a fcn model-*-
 
@@ -14,7 +14,7 @@ from models.base_model import BaseModel
 
 class FCN(BaseModel):
     def __init__(self, input_channels, device=constants.DEVICE):
-        super(FCN, self).__init__()
+        super().__init__(device=device)
         
         self.conv1 = nn.Conv1d(in_channels=input_channels, out_channels=128, kernel_size=8, padding='same')
         self.bn1 = nn.BatchNorm1d(128)
