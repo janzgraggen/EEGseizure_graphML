@@ -35,21 +35,11 @@ datasets:
 # Model
 model:
   name : "ResNet"
-  n_epochs: 10
+  n_epochs: 50
   optimizer: "SGD"
   use_scheduler: True
   learning_rate: 0.001
   criterion: "BCEWithLogitsLoss"
   config:
-    layers: 
-      - out_channels_multiplier: 2
-        pooling: "max"
-      - out_channels_multiplier: 4
-        pooling: "max"
-      - out_channels_multiplier: 8
-        pooling: "max"
-      - out_channels_multiplier: 16
-        pooling: "adaptiveavg"
     input_shape: 19
     output_shape: 1
-    kernel_size: 5

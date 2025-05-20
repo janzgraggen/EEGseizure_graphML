@@ -4,7 +4,7 @@
 #SBATCH --qos=ee-452
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --mem=16G
+#SBATCH --mem=32G
 #SBATCH --output run-log-%J.out
 
 CFG=$1

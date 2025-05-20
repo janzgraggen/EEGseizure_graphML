@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-05-18 by Caspar -*-
+# -*- Last revision: 2025-05-20 by Caspar -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
@@ -9,6 +9,7 @@
 # Import libraries
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from tqdm import tqdm
 import pandas as pd
 import mlflow
@@ -37,22 +38,32 @@ class ResNet(ClassicBase):
         The number of output classes
     """
 
-    def __init__(self, in_channels: int, mid_channels: int = 64,
-                 num_pred_classes: int = 1) -> None:
+    def __init__(self, input_shape: int, mid_channels: int = 64,
+                 output_shape: int = 1) -> None:
         super().__init__()
 
-        n_feature_maps = 64
+        self.device = constants.DEVICE
+        self.input_shape = input_shape
+        self.output_shape = output_shape
 
-        self.block1 = ResidualBlock(input_channels, n_feature_maps, expand_channels=True)
+        n_feature_maps = mid_channels
+
+        self.block1 = ResidualBlock(self.input_shape, n_feature_maps, expand_channels=True)
         self.block2 = ResidualBlock(n_feature_maps, n_feature_maps * 2, expand_channels=True)
         self.block3 = ResidualBlock(n_feature_maps * 2, n_feature_maps * 2, expand_channels=False)
 
         self.global_avg_pool = nn.AdaptiveAvgPool1d(1)  # replaces GlobalAveragePooling1D
-        self.fc = nn.Linear(n_feature_maps * 2, nb_classes)
+        self.fc = nn.Linear(n_feature_maps * 2, self.output_shape)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # type: ignore
-        x = self.layers(x)
-        return self.final(x.mean(dim=-1))
+
+        out = self.block1(x)
+        out = self.block2(out)
+        out = self.block3(out)
+        out = self.global_avg_pool(out)
+        out = out.squeeze(-1)  # remove last dim (B, C, 1) → (B, C)
+        out = self.fc(out)
+        return out
     
 
     @staticmethod
@@ -95,6 +106,8 @@ class ResidualBlock(nn.Module):
         out = self.bn3(self.conv3(out))
 
         shortcut = self.shortcut(x)
+        if out.size(2) != shortcut.size(2):
+            shortcut = F.pad(shortcut, (0, out.size(2) - shortcut.size(2)))
         out += shortcut
         out = F.relu(out)
         return out
