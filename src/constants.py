@@ -44,9 +44,9 @@ DEVICE = torch.device(
     else "mps" if torch.mps.is_available() else "cpu"
 )
 
-NUM_EPOCHS = 1000
+NUM_EPOCHS = 10
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-3
 NUM_WORKERS = 4
-CRITERION = "bce"
+CRITERION = "CrossEntropyLoss"
 OPTIMIZER = "Adam"

@@ -6,12 +6,14 @@
 # -*- Description: Functions to train models-*-
 
 # Import libraries
-import torch
+#import torch
+import torch_geometric
 from tqdm import tqdm
 import pandas as pd
 import mlflow
 from torcheval.metrics.functional import binary_f1_score
 from torch.utils.data import DataLoader
+
 
 # import files
 import constants
@@ -45,6 +47,7 @@ class GraphBase(torch.nn.Module):
 
             self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
             self.criterion = get_criterion(criterion_name)
+
 
             pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
             for e in range(num_epochs):

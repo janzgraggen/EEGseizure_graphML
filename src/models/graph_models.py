@@ -8,6 +8,7 @@
 # Import libraries
 import torch_geometric.nn as nngc
 import torch.nn as nn
+import torch
 
 # Import parent class and constants
 from models.graph_base import GraphBase
@@ -29,7 +30,7 @@ class GAT(GraphBase):
         self.to(self.device)
 
     def forward(self, data):
-        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x, edge_index, batch = data.x, torch.stack(data.edge_index), data.batch
         x = self.conv1(x, edge_index).relu()
         x = self.conv2(x, edge_index).relu()
         x =  nngc.global_mean_pool(x, batch)
@@ -43,6 +44,7 @@ class GCN(GraphBase):
         super().__init__()
         self.device = constants.DEVICE
         self.conv1 =  nngc.GCNConv(in_channels, hidden_channels)
+
         self.conv2 =  nngc.GCNConv(hidden_channels, hidden_channels)
         self.lin = nn.Linear(hidden_channels, 1)
 

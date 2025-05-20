@@ -7,6 +7,7 @@
 
 # Import librairies
 import pandas as pd
+from PyQt5.sip import array
 from holoviews.operation import threshold
 from seiz_eeg.dataset import EEGDataset
 from torch.utils.data import DataLoader, Dataset
@@ -15,10 +16,13 @@ from torch.utils.data.sampler import WeightedRandomSampler
 from tqdm import tqdm
 import networkx as nx
 import copy  # for deep graph copy
+import torch_geometric
+from torch_geometric.utils import dense_to_sparse
 from torch_geometric.utils.convert import from_networkx
 import torch
 import numpy as np
-
+from collections import Counter
+import random
 # Import modules
 import constants
 from transform_func import *
@@ -107,7 +111,7 @@ def load_data(cfg: dict) -> DataLoader:
     if graph_cfg is not None:
         dataset = graph_construction(dataset, graph_cfg, cfg)
 
-        return dataset
+        return torch_geometric.loader.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
@@ -141,6 +145,7 @@ def graph_construction(dataset, graph_cfg, cfg):
     graph_type = graph_cfg.get("type", None)
     distance_path = graph_cfg.get("path", constants.DISTANCE_3D_FILE)
     distance_path = os.path.expandvars(distance_path)
+    get_graph_summary = graph_cfg.get("get_graph_summary", None)
     
     data_set = cfg.get("set", None)
 
@@ -155,16 +160,20 @@ def graph_construction(dataset, graph_cfg, cfg):
 
         distance_graphs = []
         for i in range(len(dataset)):
-            G = nx.from_numpy_array(adj_matrix)
+
+            adj_tensor = torch.tensor(adj_matrix)
+            edge_index, edge_weight = torch_geometric.utils.dense_to_sparse(adj_tensor)
 
             signals = np.asarray(dataset[i][0].T, dtype=np.float32)  # shape: (n_channels, signal_len)
-            for k in range(signals.shape[0]):
-                G.add_node(k)
-            G.graph['x'] = signals
 
-            pyg_graph = from_networkx(G, group_node_attrs=None)
-            pyg_graph.x = torch.tensor(G.graph['x'], dtype=torch.float32)
-            
+            if get_graph_summary:
+                x_tensor = graph_signal_summary(signals)
+            else:
+                x_tensor = signals
+
+            x_tensor = torch.from_numpy(x_tensor)
+            pyg_graph = torch_geometric.data.Data(x=x_tensor, edge_index=edge_index) # edge_weight=edge_weight
+
             if data_set != "test":
                 pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.int64)
             else:
@@ -181,20 +190,28 @@ def graph_construction(dataset, graph_cfg, cfg):
         correlation_graphs = []
 
         for i in range(len(dataset)):
-
             adj_matrix = np.corrcoef(np.asarray(dataset[i][0].T, dtype=np.float32))  # shape: (n_channels, n_channels)
             adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
             np.fill_diagonal(adj_matrix, 0)
-            G = nx.from_numpy_array(adj_matrix)
+
+
+            adj_tensor = torch.tensor(adj_matrix)
+            edge_index, edge_weight = torch_geometric.utils.dense_to_sparse(adj_tensor)
 
             signals = np.asarray(dataset[i][0].T, dtype=np.float32)  # shape: (n_channels, signal_len)
-            for k in range(signals.shape[0]):
-                G.add_node(k)
-            G.graph['x'] = signals
 
-            pyg_graph = from_networkx(G, group_node_attrs=None)
-            pyg_graph.x = torch.tensor(G.graph['x'], dtype=torch.float32)
-            pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.float32)
+            if get_graph_summary:
+                x_tensor = graph_signal_summary(signals)
+            else:
+                x_tensor = signals
+
+            x_tensor = torch.from_numpy(x_tensor)
+            pyg_graph = torch_geometric.data.Data(x=x_tensor, edge_index=edge_index) # edge_weight=edge_weight
+
+            if data_set != "test":
+                pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.int64)
+            else:
+                pyg_graph.id = dataset[i][1]
 
             correlation_graphs.append(pyg_graph)
 
@@ -216,3 +233,14 @@ def get_transform(tfm_name: str) -> callable:
         return fft_filtering
     else:
         return None
+
+def graph_signal_summary(signals):
+    summary_array = np.stack([
+        np.mean(signals, axis=1),
+        np.median(signals, axis=1),
+        np.max(signals, axis=1),
+        np.min(signals, axis=1),
+        np.std(signals, axis=1),
+    ], axis=1)
+
+    return summary_array
