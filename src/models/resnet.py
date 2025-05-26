@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-05-20 by Caspar -*-
+# -*- Last revision: 2025-05-26 by Caspar -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
@@ -19,10 +19,10 @@ from torch.utils.data import DataLoader
 # import files
 import constants
 from train import *
-from models.classic_base import ClassicBase
+from models.base_model import BaseModel
 
 
-class ResNet(ClassicBase):
+class ResNet(BaseModel):
     """
     Code taken from https://github.com/hfawaz/dl-4-tsc/blob/master/classifiers/resnet.py
     and adapted using Pytorch instead of Keras
