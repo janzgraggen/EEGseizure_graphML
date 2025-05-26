@@ -1,6 +1,6 @@
 # project/config/exp/graph/basic_gcn.yml
 experiment: "gnn"
-name: "basic_gcn"
+name: "gcn_corr_fft"
 description: "Two-layer GCN for seizure prediction, using correlation graph."
 task: "seizure_prediction"
 

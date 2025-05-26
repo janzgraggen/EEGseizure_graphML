@@ -4,46 +4,30 @@ name: "basic_gcn"
 description: "Two-layer GCN for seizure prediction"
 task: "v1"
 
-# Data (same splits as before)
+config_dataset:
+  val_size: 0.2
+  tfm: "fft"
+  graph: 
+      type: "distance"
+      path: "$HOME/EE452-Network-Machine-Learning/project/data/distances_3d.csv"
+      edge_threshold: 0.5
+  num_workers: 4
+  batch_size: 32
 datasets:
 -
   set: "train"
-  val_size: 0.2
   path: "/home/ogut/data/train"
-  batch_size: 32
-  tfm: "fft"
-  graph: 
-      type: "distance"
-      path: "$HOME/EE452-Network-Machine-Learning/project/data/distances_3d.csv"
-  edge_threshold: 0.5
   shuffle: True
-  num_workers: 4
 
 -
   set: "val"
-  val_size: 0.2
   path: "/home/ogut/data/train"
-  batch_size: 32
-  tfm: "fft"
-  graph: 
-      type: "distance"
-      path: "$HOME/EE452-Network-Machine-Learning/project/data/distances_3d.csv"
-  edge_threshold: 0.5
   shuffle: False
-  num_workers: 4
 
 -
   set: "test"
   path: "/home/ogut/data/test"
-  batch_size: 32
-  tfm: "fft"
-  edge_threshold: 0.5
-  graph: 
-    type: "distance"
-    path: "$HOME/EE452-Network-Machine-Learning/project/data/distances_3d.csv"
-  edge_threshold: 1
   shuffle: False
-  num_workers: 4
 
 # Model
 model:

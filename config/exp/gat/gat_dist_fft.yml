@@ -1,7 +1,7 @@
----
-experiment: "fcn"
-name: "fcn_fft"
-description: "FCN with FFT transformation"
+# project/config/exp/graph/basic_gcn.yml
+experiment: "gnn"
+name: "gat_dist_fft"
+description: "Two-layer GAT with FFT transformation"
 task: "v1"
 
 # Data
@@ -31,11 +31,14 @@ datasets:
 
 # Model
 model:
-  name : "FCN"
-  n_epochs: 20
+  name: "GAT"
+  n_epochs: 50
   optimizer: "Adam"
-  use_scheduler: True
-  learning_rate: 1e-2
+  use_scheduler: False
+  learning_rate: 0.001
   criterion: "BCEWithLogitsLoss"
   config:
-    input_channels: 19
+    in_channels:  # number of features per node (e.g. timepoints after FFT)
+      354 
+    hidden_channels: 64
+    # edge_index will be passed in code (fixed electrode graph)

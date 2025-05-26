@@ -5,32 +5,29 @@ description: "CNN with cleaning function on inputs"
 task: "v1"
 
 # Data
+config_dataset:
+  val_size: 0.2
+  tfm: "clean"
+  num_workers: 4
+  batch_size: 32
+
 datasets:
 -
   set: "train"
-  val_size: 0.2
   path: "project/data/train"
-  batch_size: 32
-  tfm: "clean"
+  sampling: True
+  size: 1
   shuffle: True
-  num_workers: 4
 
 -
   set: "val"
-  val_size: 0.2
   path: "project/data/train"
-  batch_size: 32
-  tfm: "clean"
   shuffle: False
-  num_workers: 4
 
 -
   set: "test"
   path: "project/data/test"
-  batch_size: 32
-  tfm: "clean"
   shuffle: False
-  num_workers: 4
 
 # Model
 model:

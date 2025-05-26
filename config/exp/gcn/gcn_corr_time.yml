@@ -1,48 +1,36 @@
 # project/config/exp/graph/basic_gcn.yml
 experiment: "gnn"
-name: "basic_gcn"
+name: "gcn_corr_time"
 description: "Two-layer GCN for seizure prediction, using correlation graph in time domain."
 task: "seizure_prediction"
 
 # Data (same splits as before)
+config_dataset:
+  val_size: 0.2
+  tfm: "clean"
+  graph: 
+      type: "correlation"
+      edge_threshold: 0.8
+  num_workers: 4
+  batch_size: 32
+
 datasets:
 -
   set: "train"
-  val_size: 0.2
   path: "project/data/train"
-  batch_size: 32
-  tfm: "clean"
   sampling: True
   size: 1
-  graph: 
-      type: "correlation"
-  edge_threshold: 0.5
   shuffle: True
-  num_workers: 4
 
 -
   set: "val"
-  val_size: 0.2
   path: "project/data/train"
-  batch_size: 32
-  tfm: "clean"
-  graph: 
-      type: "correlation"
-  edge_threshold: 0.5
   shuffle: False
-  num_workers: 4
 
 -
   set: "test"
   path: "project/data/test"
-  batch_size: 32
-  tfm: "clean"
-  edge_threshold: 0.5
-  graph: 
-      type: "correlation"
-  edge_threshold: 0.5
   shuffle: False
-  num_workers: 4
 
 # Model
 model:
