@@ -1,7 +1,7 @@
 # project/config/exp/graph/basic_gcn.yml
 experiment: "gnn"
 name: "basic_gcn"
-description: "Two-layer GCN for seizure prediction, using correlation graph."
+description: "Two-layer GCN for seizure prediction, using correlation graph in time domain."
 task: "seizure_prediction"
 
 # Data (same splits as before)
@@ -11,12 +11,12 @@ datasets:
   val_size: 0.2
   path: "project/data/train"
   batch_size: 32
-  tfm: "fft"
+  tfm: "clean"
   sampling: True
   size: 1
   graph: 
       type: "correlation"
-  edge_threshold: 0.8
+  edge_threshold: 0.5
   shuffle: True
   num_workers: 4
 
@@ -25,10 +25,10 @@ datasets:
   val_size: 0.2
   path: "project/data/train"
   batch_size: 32
-  tfm: "fft"
+  tfm: "clean"
   graph: 
       type: "correlation"
-  edge_threshold: 0.8
+  edge_threshold: 0.5
   shuffle: False
   num_workers: 4
 
@@ -36,10 +36,11 @@ datasets:
   set: "test"
   path: "project/data/test"
   batch_size: 32
-  tfm: "fft"
-  edge_threshold: 0.8
+  tfm: "clean"
+  edge_threshold: 0.5
   graph: 
       type: "correlation"
+  edge_threshold: 0.5
   shuffle: False
   num_workers: 4
 
@@ -49,10 +50,10 @@ model:
   n_epochs: 50
   optimizer: "Adam"
   use_scheduler: False
-  learning_rate: 0.0001
+  learning_rate: 0.001
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)
-      354 
+      3000
     hidden_channels: 64
     # edge_index will be passed in code (fixed electrode graph)

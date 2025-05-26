@@ -48,6 +48,13 @@ class GraphBase(torch.nn.Module):
             self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
             self.criterion = get_criterion(criterion_name)
 
+            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer,
+                T_max=num_epochs,
+                eta_min=0.00001,
+            )
+            self.to(self.device)
+
 
             pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
             for e in range(num_epochs):

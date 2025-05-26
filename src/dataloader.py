@@ -196,7 +196,8 @@ def graph_construction(dataset, graph_cfg, cfg):
         correlation_graphs = []
 
         for i in range(len(dataset)):
-            adj_matrix = np.corrcoef(np.asarray(dataset[i][0].T, dtype=np.float32))  # shape: (n_channels, n_channels)
+            data = np.asarray(dataset[i][0].T, dtype=np.float32) 
+            adj_matrix = safe_corrcoef(data)
             adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
             np.fill_diagonal(adj_matrix, 0)
 
@@ -225,6 +226,13 @@ def graph_construction(dataset, graph_cfg, cfg):
 
     else:
         raise ValueError("This graph construction method is not implemented.")
+    
+def safe_corrcoef(X, eps=1e-8):
+    X = X - np.mean(X, axis=1, keepdims=True)
+    std = np.std(X, axis=1, keepdims=True)
+    std[std < eps] = eps  # Avoid division by zero
+    X_norm = X / std
+    return np.dot(X_norm, X_norm.T) / X.shape[1]
 
 def get_transform(tfm_name: str) -> callable:
     """Get the transform function based on the name provided.
