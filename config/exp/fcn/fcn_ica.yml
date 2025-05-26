@@ -1,7 +1,7 @@
 ---
 experiment: "fcn"
-name: "fcn_base"
-description: "FCN with base configuration"
+name: "fcn_fft"
+description: "FCN with FFT transformation"
 task: "v1"
 
 # Data
@@ -11,7 +11,7 @@ datasets:
   val_size: 0.2
   path: "project/data/train"
   batch_size: 32
-  tfm: ""
+  tfm: "ica"
   sampling: True
   size: 1
   shuffle: True
@@ -22,7 +22,7 @@ datasets:
   val_size: 0.2
   path: "project/data/train"
   batch_size: 32
-  tfm: ""
+  tfm: "ica"
   shuffle: False
   num_workers: 4
 
@@ -30,7 +30,7 @@ datasets:
   set: "test"
   path: "project/data/test"
   batch_size: 32
-  tfm: ""
+  tfm: "ica"
   shuffle: False
   num_workers: 4
 

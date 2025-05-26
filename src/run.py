@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Jan Zgraggen -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-05-26 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to run the project-*-
 
@@ -62,7 +62,7 @@ def main(args: argparse.Namespace):
             num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
             learning_rate=float(model_cfg.get("learning_rate", constants.LEARNING_RATE)),
             criterion_name=model_cfg.get("criterion", constants.CRITERION),
-            optimizer_name=cfg.get("optimizer", constants.OPTIMIZER),
+            optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
         )
 
         model.predict(loader=loader_train)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     # Use argument
     parser = argparse.ArgumentParser(description="Run model computation")
-    parser.add_argument("--cfg", type=str, default="cnn/cnn_test.yml"
+    parser.add_argument("--cfg", type=str, default="fcn/fcn_fft.yml"
     )
     parser.add_argument("--seed", type=int, default=1)
 

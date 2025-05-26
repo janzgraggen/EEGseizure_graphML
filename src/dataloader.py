@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-05-26 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to load the project-*-
 
@@ -11,11 +11,9 @@ from seiz_eeg.dataset import EEGDataset
 from torch.utils.data import DataLoader, Dataset
 import os
 from torch.utils.data.sampler import WeightedRandomSampler
+from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-import copy  # for deep graph copy
 import torch_geometric
-from torch_geometric.utils import dense_to_sparse
-from torch_geometric.utils.convert import from_networkx
 import torch
 import numpy as np
 # Import modules
@@ -66,12 +64,17 @@ def load_data(cfg: dict) -> DataLoader:
     clips_path = os.path.join(path, "segments.parquet")
     clips = pd.read_parquet(clips_path)
 
-    split = cfg.get("split", None)
+    val_size = cfg.get("val_size", None)
 
-    if split is not None:
-        start = int(split[0] * len(clips))
-        end = int(split[1] * len(clips))
-        clips = clips.iloc[start:end]
+    if val_size is not None:
+        val_size = float(val_size)
+        labels = clips["label"].values
+        indices = clips.index.values
+        
+        train_indices, val_indices = train_test_split(
+            indices, test_size=val_size, stratify=labels, random_state=42
+        )
+
 
     # Get transform
     tfm_name = cfg.get("tfm", None)
@@ -85,6 +88,16 @@ def load_data(cfg: dict) -> DataLoader:
     get_id = True if set_name == "test" else False
     sampling = cfg.get("sampling", False)
     size = int(cfg.get("size", 1))
+    num_workers = cfg.get("num_workers", constants.NUM_WORKERS)
+
+    if set_name == "train":
+        # Use train indices for training
+        clips = clips.loc[train_indices]
+        clips.sort_index(inplace=True)
+    elif set_name == "val":
+        # Use validation indices for validation
+        clips = clips.loc[val_indices]
+        clips.sort_index(inplace=True)
 
     # Create dataset
     dataset = EEGDataset(
@@ -183,7 +196,8 @@ def graph_construction(dataset, graph_cfg, cfg):
         correlation_graphs = []
 
         for i in range(len(dataset)):
-            adj_matrix = np.corrcoef(np.asarray(dataset[i][0].T, dtype=np.float32))  # shape: (n_channels, n_channels)
+            data = np.asarray(dataset[i][0].T, dtype=np.float32) 
+            adj_matrix = safe_corrcoef(data)
             adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
             np.fill_diagonal(adj_matrix, 0)
 
@@ -212,6 +226,13 @@ def graph_construction(dataset, graph_cfg, cfg):
 
     else:
         raise ValueError("This graph construction method is not implemented.")
+    
+def safe_corrcoef(X, eps=1e-8):
+    X = X - np.mean(X, axis=1, keepdims=True)
+    std = np.std(X, axis=1, keepdims=True)
+    std[std < eps] = eps  # Avoid division by zero
+    X_norm = X / std
+    return np.dot(X_norm, X_norm.T) / X.shape[1]
 
 def get_transform(tfm_name: str) -> callable:
     """Get the transform function based on the name provided.
@@ -228,6 +249,8 @@ def get_transform(tfm_name: str) -> callable:
         return time_filtering
     elif tfm_name == "clean":
         return clean_input
+    elif tfm_name == "ica":
+        return ica
     else:
         return None
 

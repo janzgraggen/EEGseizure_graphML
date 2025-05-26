@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-05-26 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train the model-*-
 
@@ -47,8 +47,8 @@ def get_optimizer(
         torch.optim.Optimizer: The optimizer object.
     """
     if optimizer_name == "Adam":
-        return torch.optim.Adam(parameters, lr=learning_rate)
+        return torch.optim.Adam(parameters, lr=learning_rate, weight_decay=1e-5)
     elif optimizer_name == "SGD":
-        return torch.optim.SGD(parameters, lr=learning_rate)
+        return torch.optim.SGD(parameters, lr=learning_rate, momentum=0.9, weight_decay=1e-5)
     else:
         raise ValueError(f"Optimizer {optimizer_name} not recognized.")

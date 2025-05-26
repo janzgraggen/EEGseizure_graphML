@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-05-26 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
@@ -47,6 +47,13 @@ class GraphBase(torch.nn.Module):
 
             self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
             self.criterion = get_criterion(criterion_name)
+
+            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer,
+                T_max=num_epochs,
+                eta_min=0.00001,
+            )
+            self.to(self.device)
 
 
             pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
@@ -158,21 +165,10 @@ class GraphBase(torch.nn.Module):
 
         with torch.no_grad():
             for batch in loader:
-
                 # Unpack the batch
-                x_batch, x_ids = batch[0], batch[1]
+                x_ids = batch.id
 
-                # permute the input tensor to match the expected shape
-                x_batch = x_batch.permute(0, 2, 1)
-
-                # Move to device
-                x_batch = x_batch.float().to(self.device)
-
-                # Perform the forward pass to get the model's output logits
-                logits = self(x_batch)
-
-                # Convert logits to predictions.
-                predictions = (logits > 0).int().cpu().numpy()
+                predictions = self.predict_batch(batch)
 
                 all_predictions.extend(predictions.flatten().tolist())
                 all_ids.extend(list(x_ids))
