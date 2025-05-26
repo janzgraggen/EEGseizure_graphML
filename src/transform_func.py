@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Jan Zgraggen -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-04-29 by roduit -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Functions to load the data-*-
 
 # Import libraries
@@ -37,3 +37,21 @@ def fft_filtering(x: np.ndarray) -> np.ndarray:
     win_len = x.shape[0]
     # Only frequencies b/w 0.5 and 30Hz
     return x[int(0.5 * win_len // 250) : 30 * win_len // 250]
+
+def clean_input(x: np.ndarray) -> np.ndarray:
+    """Apply processing to the input
+    
+    Args:
+        x (np.ndarray): Input signal to be filtered.
+    Returns:
+        np.ndarray: Processed signal.
+    """
+    # Apply bandpass filter
+    x = time_filtering(x)
+
+    # Normalize: per-sample, per-channel standardization
+    mean = np.mean(x, axis=0, keepdims=True)
+    std = np.std(x, axis=0, keepdims=True)
+    x = (x - mean) / (std + 1e-6)
+
+    return x

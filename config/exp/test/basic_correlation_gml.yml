@@ -12,12 +12,15 @@ datasets:
   path: "../data/train"
   batch_size: 32
   tfm: "fft"
-  graph: 
+  graph:
     type: "correlation"
     path: "project/data/distances_3d.csv"
+    get_graph_summary : False
 
-  edge_threshold: 0.6
+  edge_threshold: 0.8
   shuffle: True
+  sampling: True
+  size: 4
   num_workers: 4
 
 -
@@ -29,7 +32,9 @@ datasets:
   graph: 
     type: "correlation"
     path: "project/data/distances_3d.csv"
-  edge_threshold: 1
+    get_graph_summary : False
+
+  edge_threshold: 0.8
   shuffle: False
   num_workers: 4
 
@@ -41,7 +46,9 @@ datasets:
   graph: 
     type: "correlation"
     path: "project/data/distances_3d.csv"
-  edge_threshold: 1
+    get_graph_summary: False
+
+  edge_threshold: 0.8
   shuffle: False
   num_workers: 4
 

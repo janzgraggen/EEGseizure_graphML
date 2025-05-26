@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-04-29 by roduit -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train the model-*-
 
 # Import libraries
@@ -26,6 +26,8 @@ def get_criterion(criterion_name: str) -> torch.nn.Module:
         return torch.nn.BCEWithLogitsLoss()
     elif criterion_name == "CrossEntropyLoss":
         return torch.nn.CrossEntropyLoss()
+    elif criterion_name=="MSELoss":
+        return torch.nn.MSELoss()
     else:
         raise ValueError(f"Criterion {criterion_name} not recognized.")
 

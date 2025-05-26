@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-06 by Caspar -*-
+# -*- Last revision: 2025-05-26 by Caspar -*-
 # -*- python version : 3.9.14 -*-
 # -*- Description: Constants used in the project -*-
 
@@ -44,9 +44,9 @@ DEVICE = torch.device(
     else "mps" if torch.mps.is_available() else "cpu"
 )
 
-NUM_EPOCHS = 1000
+NUM_EPOCHS = 10
 BATCH_SIZE = 32
 LEARNING_RATE = 1e-3
 NUM_WORKERS = 4
-CRITERION = "bce"
+CRITERION = "BCEWithLogitsLoss"
 OPTIMIZER = "Adam"

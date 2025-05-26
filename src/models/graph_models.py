@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-05-06 by Caspar -*-
-# -*- python version : 3.11.11 -*-
+# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
 # Import libraries
 import torch_geometric.nn as nngc
 import torch.nn as nn
+import torch
 
 # Import parent class and constants
 from models.graph_base import GraphBase
@@ -43,6 +44,7 @@ class GCN(GraphBase):
         super().__init__()
         self.device = constants.DEVICE
         self.conv1 =  nngc.GCNConv(in_channels, hidden_channels)
+
         self.conv2 =  nngc.GCNConv(hidden_channels, hidden_channels)
         self.lin = nn.Linear(hidden_channels, 1)
 
