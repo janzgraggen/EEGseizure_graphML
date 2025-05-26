@@ -95,7 +95,10 @@ scp username@izar.hpc.epfl.ch:/home/username/EE452-Network-Machine-Learning/proj
 
 and replacing `/path/to/experiment` with the desired experiment path, `username` by your Gaspar ID and `~/path/to/destination` with the path to your destination location.
 
-
+# Results
+- fcn_base_adam : 0.65510
+- cnn_base_adam : 0.41078
+- fcn_fft: 0.50754
 
 ## Contributors
 This project has been elaborated by Vincent Roduit, Caspar Henking, Aurel Mäder and Jan Zgraggen during the 2025 spring semester at EPFL.
