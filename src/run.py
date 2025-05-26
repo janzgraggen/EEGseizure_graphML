@@ -49,7 +49,8 @@ def main(args: argparse.Namespace):
         model = choose_model(cfg=model_cfg)
 
         datasets_cfg = cfg.get("datasets", {})
-        loader_train, loader_val, loader_test = parse_datasets(cfg=datasets_cfg)
+        config_dataset = cfg.get("config_dataset", {})
+        loader_train, loader_val, loader_test = parse_datasets(datasets=datasets_cfg, config=config_dataset)
 
         print("Logging model...")
         log_cfg(cfg=model_cfg)

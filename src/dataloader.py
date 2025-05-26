@@ -21,7 +21,7 @@ import constants
 from transform_func import *
 
 
-def parse_datasets(cfg: dict) -> tuple[DataLoader, DataLoader, DataLoader]:
+def parse_datasets(datasets:list, config:dict) -> tuple[DataLoader, DataLoader, DataLoader]:
     """Parse the datasets from the configuration file.
 
     Args:
@@ -31,24 +31,24 @@ def parse_datasets(cfg: dict) -> tuple[DataLoader, DataLoader, DataLoader]:
         tuple: A tuple containing the loaders for train, validation, and test datasets.
     """
 
-    num_datasets = len(cfg)
+    num_datasets = len(datasets)
     if num_datasets == 0:
         raise ValueError("No datasets provided in the configuration file.")
 
     for i in tqdm(range(num_datasets), desc="Loading datasets", unit="dataset"):
-        dataset = cfg[i]
+        dataset = datasets[i]
         set_type = dataset.get("set", None)
         if set_type == "train":
-            loader_train = load_data(cfg=dataset)
+            loader_train = load_data(dataset_cfg=dataset, config=config)
         elif set_type == "val":
-            loader_val = load_data(cfg=dataset)
+            loader_val = load_data(dataset_cfg=dataset, config=config)
         elif set_type == "test":
-            loader_test = load_data(cfg=dataset)
+            loader_test = load_data(dataset_cfg=dataset, config=config)
         else:
             raise ValueError(f"Unknown dataset type: {set_type}")
     return loader_train, loader_val, loader_test
 
-def load_data(cfg: dict) -> DataLoader:
+def load_data(dataset_cfg: dict, config:dict) -> DataLoader:
     """Load the data from the path and return a DataLoader.
 
     Args:
@@ -58,15 +58,30 @@ def load_data(cfg: dict) -> DataLoader:
         loader (DataLoader): A DataLoader object containing the data.
     """
     # Read clips
-    path = cfg.get("path", None)
+    path = dataset_cfg.get("path", None)
     if path is None:
         raise ValueError("No data path provided in the configuration file.")
+    
     clips_path = os.path.join(path, "segments.parquet")
     clips = pd.read_parquet(clips_path)
 
-    val_size = cfg.get("val_size", None)
+    val_size = config.get("val_size", None)
 
-    if val_size is not None:
+    # Get transform
+    tfm_name = config.get("tfm", None)
+    tfm = get_transform(tfm_name=tfm_name)
+
+
+    # Get additional parameters
+    batch_size = config.get("batch_size", constants.BATCH_SIZE)
+    shuffle = dataset_cfg.get("shuffle", True)
+    set_name = dataset_cfg.get("set", None)
+    get_id = True if set_name == "test" else False
+    sampling = dataset_cfg.get("sampling", False)
+    size = int(dataset_cfg.get("size", 1))
+    num_workers = config.get("num_workers", constants.NUM_WORKERS)
+
+    if set_name != "test":
         val_size = float(val_size)
         labels = clips["label"].values
         indices = clips.index.values
@@ -74,22 +89,7 @@ def load_data(cfg: dict) -> DataLoader:
         train_indices, val_indices = train_test_split(
             indices, test_size=val_size, stratify=labels, random_state=42
         )
-
-
-    # Get transform
-    tfm_name = cfg.get("tfm", None)
-    tfm = get_transform(tfm_name=tfm_name)
-
-
-    # Get additional parameters
-    batch_size = cfg.get("batch_size", constants.BATCH_SIZE)
-    shuffle = cfg.get("shuffle", True)
-    set_name = cfg.get("set", None)
-    get_id = True if set_name == "test" else False
-    sampling = cfg.get("sampling", False)
-    size = int(cfg.get("size", 1))
-    num_workers = cfg.get("num_workers", constants.NUM_WORKERS)
-
+    
     if set_name == "train":
         # Use train indices for training
         clips = clips.loc[train_indices]
@@ -112,10 +112,10 @@ def load_data(cfg: dict) -> DataLoader:
         shuffle = False
 
     # Graph construction
-    graph_cfg = cfg.get("graph", None)
+    graph_cfg = config.get("graph", None)
     
     if graph_cfg is not None:
-        dataset = graph_construction(dataset, graph_cfg, cfg)
+        dataset = graph_construction(dataset, graph_cfg, dataset_cfg)
 
         return torch_geometric.loader.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
@@ -157,7 +157,7 @@ def graph_construction(dataset, graph_cfg, cfg):
 
     if graph_type == 'distance':
         distance_df = pd.read_csv(distance_path)
-        edge_threshold =  cfg.get("edge_threshold", None)
+        edge_threshold =  graph_cfg.get("edge_threshold", None)
 
         adj_matrix = distance_df.pivot(index='from', columns='to', values='distance')
         adj_matrix = adj_matrix.reindex(distance_df['from'].unique(), axis=0).reindex(distance_df['from'].unique(),
@@ -191,8 +191,8 @@ def graph_construction(dataset, graph_cfg, cfg):
 
 
     elif graph_type == 'correlation':
-
-        edge_threshold =  cfg.get("edge_threshold", None)
+        print(graph_cfg)
+        edge_threshold =  graph_cfg.get("edge_threshold", None)
         correlation_graphs = []
 
         for i in range(len(dataset)):
