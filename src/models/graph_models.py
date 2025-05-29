@@ -45,12 +45,12 @@ class GCN(GraphBase):
         super().__init__()
         self.device = constants.DEVICE
 
-        self.conv1 = GCNConv(in_channels, hidden_channels)
-        self.bn1 = BatchNorm(hidden_channels)
+        self.conv1 = nngc.GCNConv(in_channels, hidden_channels)
+        self.bn1 = nngc.BatchNorm(hidden_channels)
         self.dropout1 = nn.Dropout(0.2)
 
-        self.conv2 = GCNConv(hidden_channels, hidden_channels)
-        self.bn2 = BatchNorm(hidden_channels)
+        self.conv2 = nngc.GCNConv(hidden_channels, hidden_channels)
+        self.bn2 = nngc.BatchNorm(hidden_channels)
         self.dropout2 = nn.Dropout(0.2)
 
         self.lin = nn.Linear(hidden_channels, 1)
@@ -61,15 +61,15 @@ class GCN(GraphBase):
 
     def _init_weights(self):
         # Xavier for linear layer
-        init.xavier_uniform_(self.lin.weight)
+        nn.init.xavier_uniform_(self.lin.weight)
         if self.lin.bias is not None:
-            init.zeros_(self.lin.bias)
+            nn.init.zeros_(self.lin.bias)
 
         # Xavier for GCNConv layers
         for conv in [self.conv1, self.conv2]:
-            init.xavier_uniform_(conv.lin.weight)
+            nn.init.xavier_uniform_(conv.lin.weight)
             if conv.lin.bias is not None:
-                init.zeros_(conv.lin.bias)
+                nn.init.zeros_(conv.lin.bias)
 
     def forward(self, data):
         
@@ -85,7 +85,7 @@ class GCN(GraphBase):
         x = x.relu()
         x = self.dropout2(x)
 
-        x = global_mean_pool(x, batch)
+        x = nngc.global_mean_pool(x, batch)
         x = self.dropout(x)
         return self.lin(x)
 
