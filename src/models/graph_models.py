@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-05-26 by roduit -*-
+# -*- Last revision: 2025-05-29 by Caspar -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
 # Import libraries
 import torch_geometric.nn as nngc
 import torch.nn as nn
-import torch.nn.init as init
-from torch_geometric.nn import GCNConv, global_mean_pool, BatchNorm
+import torch
+import torch.nn.functional as F
 
 # Import parent class and constants
 from models.graph_base import GraphBase
@@ -92,3 +92,126 @@ class GCN(GraphBase):
     @staticmethod
     def from_config(model_cfg):
         return GCN(**model_cfg)
+
+
+class LSTMGNN(GraphBase):
+    def __init__(self, in_channels, hidden_channels_gcn, hidden_channels_lstm):
+        super().__init__()
+        self.device = constants.DEVICE
+        self.gcn1 = nngc.GCNConv(in_channels, hidden_channels_gcn)
+        self.gcn2 = nngc.GCNConv(hidden_channels_gcn, hidden_channels_gcn)
+        self.lstm = nn.LSTM(
+            input_size=hidden_channels_gcn,
+            hidden_size=hidden_channels_lstm,
+            num_layers=1,
+            batch_first=False
+        )
+        self.fc = nn.Linear(hidden_channels_lstm, 1)
+
+        self.to(self.device)
+
+        
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        
+        # First GCN layer with ReLU activation
+        x1 = self.gcn1(x, edge_index)
+        x1 = F.relu(x1)
+        
+        # Second GCN layer with ReLU activation
+        x2 = self.gcn2(x1, edge_index)
+        x2 = F.relu(x2)
+        
+        # Stack outputs to form a sequence of two time steps
+        sequence = torch.stack([x1, x2], dim=0)  # Shape: [2, num_nodes, hidden_dim_gcn]
+        
+        # Process the sequence through LSTM
+        lstm_out, _ = self.lstm(sequence)  # Shape: [2, num_nodes, hidden_dim_lstm]
+        
+        # Extract the last time step output for each node
+        node_embeddings = lstm_out[-1]  # Shape: [num_nodes, hidden_dim_lstm]
+        
+        # Aggregate node embeddings to graph-level via mean pooling
+        graph_embeddings = nngc.global_mean_pool(node_embeddings, batch)  # Shape: [batch_size, hidden_dim_lstm]
+        
+        # Final linear layer for binary classification logits
+        logits = self.fc(graph_embeddings)  # Shape: [batch_size, 1]
+        
+        return logits
+
+    @staticmethod
+    def from_config(model_cfg):
+        return LSTMGNN(**model_cfg)
+
+
+class LSTMGAT(GraphBase):
+    def __init__(self, in_channels, hidden_channels_gat, hidden_channels_lstm):
+        super().__init__()
+        self.device = constants.DEVICE
+        # First GAT layer with 8 attention heads
+        self.gat1 = nngc.GATConv(
+            in_channels=in_channels,
+            out_channels=hidden_channels_gat,
+            heads=8,  # Multi-head attention
+            concat=False  # Average heads instead of concatenating
+        )
+        # Second GAT layer
+        self.gat2 = nngc.GATConv(
+            in_channels=hidden_channels_gat,
+            out_channels=hidden_channels_gat,
+            heads=8,
+            concat=False
+        )
+
+        self.gat3 = nngc.GATConv(
+            in_channels=hidden_channels_gat,
+            out_channels=hidden_channels_gat,
+            heads=8,
+            concat=False
+        )
+        # LSTM to process sequence of GAT outputs
+        self.lstm = nn.LSTM(
+            input_size=hidden_channels_gat,
+            hidden_size=hidden_channels_lstm,
+            num_layers=1,
+            batch_first=False
+        )
+        # Final classifier
+        self.fc = nn.Linear(hidden_channels_lstm, 1)
+
+        self.to(self.device)
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+        
+        # First GAT layer with ELU activation
+        x1 = self.gat1(x, edge_index)
+        x1 = F.elu(x1)
+        
+        # Second GAT layer with ELU activation
+        x2 = self.gat2(x1, edge_index)
+        x2 = F.elu(x2)
+
+        x3 = self.gat3(x2, edge_index)
+        x3 = F.elu(x3)
+        
+        # Stack GAT outputs as sequence (2 timesteps)
+        sequence = torch.stack([x1, x2, x3], dim=0)  # Shape: [2, num_nodes, hidden_dim_gat]
+        
+        # Process sequence with LSTM
+        lstm_out, _ = self.lstm(sequence)  # Shape: [2, num_nodes, hidden_dim_lstm]
+        
+        # Take last timestep output
+        node_embeddings = lstm_out[-1]  # Shape: [num_nodes, hidden_dim_lstm]
+        
+        # Global mean pooling for graph-level embedding
+        graph_embeddings = nngc.global_mean_pool(node_embeddings, batch)
+        
+        # Final binary classification
+        logits = self.fc(graph_embeddings)
+        
+        return logits
+
+    @staticmethod
+    def from_config(model_cfg):
+        return LSTMGAT(**model_cfg)
