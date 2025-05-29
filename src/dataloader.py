@@ -19,6 +19,10 @@ import numpy as np
 # Import modules
 import constants
 from transform_func import *
+from scipy import signal
+from scipy.signal import welch
+from scipy.signal import coherence
+
 
 
 def parse_datasets(datasets:list, config:dict) -> tuple[DataLoader, DataLoader, DataLoader]:
@@ -224,6 +228,40 @@ def graph_construction(dataset, graph_cfg, cfg):
 
         return correlation_graphs
 
+
+    elif graph_type == 'coherence_band_energies':
+        edge_threshold =  graph_cfg.get("edge_threshold", None)
+        coherence_energie_graphs = []
+
+        for i in range(len(dataset)):
+
+            f, coherence_matrix = signal.coherence(x=dataset[i][0][:, :, np.newaxis], y=dataset[i][0][:, np.newaxis, :], fs=250, axis=0)
+            adj_matrix = coherence_matrix[np.logical_and(f >= 0.5, f <= 30), : , :].mean(axis=0)
+            adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
+            np.fill_diagonal(adj_matrix, 0)
+
+            adj_tensor = torch.tensor(adj_matrix)
+            edge_index, edge_weight = torch_geometric.utils.dense_to_sparse(adj_tensor)
+
+            freqs, signals = signal.welch(np.asarray(dataset[i][0].T, dtype=np.float32), fs=250, nperseg=250)
+
+            if get_graph_summary:
+                x_tensor = graph_signal_summary(signals)
+            else:
+                x_tensor = signals[:, np.logical_and(freqs >= 0.5, freqs <= 30)]
+
+            x_tensor = torch.from_numpy(x_tensor)
+            pyg_graph = torch_geometric.data.Data(x=x_tensor, edge_index=edge_index) # edge_weight=edge_weight
+
+            if data_set != "test":
+                pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.int64)
+            else:
+                pyg_graph.id = dataset[i][1]
+
+            coherence_energie_graphs.append(pyg_graph)
+
+        return coherence_energie_graphs
+
     else:
         raise ValueError("This graph construction method is not implemented.")
     
@@ -264,3 +302,35 @@ def graph_signal_summary(signals):
     ], axis=1)
 
     return summary_array
+
+
+def compute_band_energy(eeg_data, fs = 250):
+    freq_bands = {
+        'delta': (0.5, 4),
+        'theta': (4, 8),
+        'alpha': (8, 13),
+        'beta': (13, 30),
+    }
+
+    n_channels = eeg_data.shape[0]
+    energy_matrix = np.zeros((n_channels, 4))
+
+    for ch in range(n_channels):
+        # Welch returns PSD estimate
+        freqs, psd = signal.welch(eeg_data[ch], fs=fs, nperseg=fs)
+
+        for i, band in enumerate(freq_bands):
+            idx_band = np.logical_and(freqs >= freq_bands[band][0], freqs <= freq_bands[band][1])
+            # Integrate PSD over band: power ≈ energy
+            band_power = np.trapz(psd[idx_band], freqs[idx_band])
+            energy_matrix[ch, i] = band_power
+
+
+
+
+
+    return energy_matrix
+
+
+
+
