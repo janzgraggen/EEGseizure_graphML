@@ -244,7 +244,7 @@ def graph_construction(dataset, graph_cfg, cfg):
             f, coherence_matrix = signal.coherence(x=dataset[i][0][:, :, np.newaxis], y=dataset[i][0][:, np.newaxis, :], fs=250, axis=0)
             coherence_matrix = np.nan_to_num(coherence_matrix, nan=0.0, posinf=0.0, neginf=0.0)
             adj_matrix = coherence_matrix[np.logical_and(f >= 0.5, f <= 30), : , :].mean(axis=0)
-            #adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
+            adj_matrix = np.where(adj_matrix >= edge_threshold, adj_matrix, 0)
             np.fill_diagonal(adj_matrix, 0)
 
             adj_tensor = torch.tensor(adj_matrix)
