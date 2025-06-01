@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-05-29 by Caspar -*-
+# -*- Last revision: 2025-06-01 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
@@ -56,33 +56,34 @@ class GCN(GraphBase):
         self.lin = nn.Linear(hidden_channels, 1)
         self.dropout = nn.Dropout(0.5)
 
+        self.leaky_relu_slope = 0.1
         self._init_weights()
         self.to(self.device)
 
     def _init_weights(self):
-        # Xavier for linear layer
         nn.init.xavier_uniform_(self.lin.weight)
         if self.lin.bias is not None:
             nn.init.zeros_(self.lin.bias)
 
-        # Xavier for GCNConv layers
         for conv in [self.conv1, self.conv2]:
             nn.init.xavier_uniform_(conv.lin.weight)
             if conv.lin.bias is not None:
                 nn.init.zeros_(conv.lin.bias)
 
     def forward(self, data):
-        
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
         x = self.conv1(x, edge_index)
         x = self.bn1(x)
-        x = x.relu()
+        x = F.leaky_relu(x, negative_slope=self.leaky_relu_slope)
         x = self.dropout1(x)
+
+        x_res = x
 
         x = self.conv2(x, edge_index)
         x = self.bn2(x)
-        x = x.relu()
+        x = x + x_res
+        x = F.leaky_relu(x, negative_slope=self.leaky_relu_slope)
         x = self.dropout2(x)
 
         x = nngc.global_mean_pool(x, batch)

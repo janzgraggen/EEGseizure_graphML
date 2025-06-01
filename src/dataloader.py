@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-26 by roduit -*-
+# -*- Last revision: 2025-06-01 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to load the project-*-
 
@@ -288,8 +288,6 @@ def get_transform(tfm_name: str) -> callable:
         return time_filtering
     elif tfm_name == "clean":
         return clean_input
-    elif tfm_name == "ica":
-        return ica
     else:
         return None
 
@@ -325,11 +323,7 @@ def compute_band_energy(eeg_data, fs = 250):
             # Integrate PSD over band: power ≈ energy
             band_power = np.trapz(psd[idx_band], freqs[idx_band])
             energy_matrix[ch, i] = band_power
-
-
-
-
-
+            
     return energy_matrix
 
 
