@@ -215,3 +215,47 @@ class LSTMGAT(GraphBase):
     @staticmethod
     def from_config(model_cfg):
         return LSTMGAT(**model_cfg)
+
+
+
+class EccGatGNN(GraphBase): # Daniele Grattarola, et Al Seizure local-isation with attention-based graph neural networks. Expert Systems with Applications, 203:117330, 2022. DOI: 10.1016/j.eswa.2022.117330.
+    def __init__(self, in_channels, hidden_channels, edge_attr_dim):
+        super().__init__()
+        self.device = constants.DEVICE
+
+        # ECC Layer (Edge-conditioned convolution)
+        self.ecc = nngc.conv.ECConv(
+            nn=nn.Sequential(nn.Linear(edge_attr_dim, 32),
+                          nn.ReLU(),
+                          nn.Linear(32, in_channels * hidden_channels)),
+            in_channels=in_channels,
+            out_channels=hidden_channels
+        )
+
+        # GAT Layer
+        self.gat = nngc.GATConv(hidden_channels, hidden_channels, heads=1)
+
+        # Output layer
+        self.out = nn.Linear(hidden_channels, 1)
+
+        self.to(self.device)
+
+
+
+
+    def forward(self, data):
+        # ECCConv: node features and edge attributes
+        x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr , data.batch
+
+        x = self.ecc(x, edge_index, edge_attr.float().unsqueeze(1))
+        x = F.relu(x)
+
+        # GAT Layer
+        x = self.gat(x, edge_index)
+        x = F.relu(x)
+
+        # Global pooling
+        x = nngc.global_mean_pool(x, batch)
+
+        # Output
+        return self.out(x)

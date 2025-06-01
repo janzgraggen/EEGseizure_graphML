@@ -45,6 +45,6 @@ model:
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)
-      30
-    hidden_channels: 10
+      126
+    hidden_channels: 32
     # edge_index will be passed in code (fixed electrode graph)

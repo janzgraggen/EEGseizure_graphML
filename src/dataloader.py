@@ -217,7 +217,7 @@ def graph_construction(dataset, graph_cfg, cfg):
                 x_tensor = signals
 
             x_tensor = torch.from_numpy(x_tensor)
-            pyg_graph = torch_geometric.data.Data(x=x_tensor, edge_index=edge_index) # edge_weight=edge_weight
+            pyg_graph = torch_geometric.data.Data(x=x_tensor, edge_index=edge_index, edge_attr=edge_weight) # edge_weight=edge_weight
 
             if data_set != "test":
                 pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.int64)
@@ -236,8 +236,9 @@ def graph_construction(dataset, graph_cfg, cfg):
         for i in range(len(dataset)):
 
             f, coherence_matrix = signal.coherence(x=dataset[i][0][:, :, np.newaxis], y=dataset[i][0][:, np.newaxis, :], fs=250, axis=0)
+            coherence_matrix = np.nan_to_num(coherence_matrix, nan=0.0, posinf=0.0, neginf=0.0)
             adj_matrix = coherence_matrix[np.logical_and(f >= 0.5, f <= 30), : , :].mean(axis=0)
-            adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
+            #adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
             np.fill_diagonal(adj_matrix, 0)
 
             adj_tensor = torch.tensor(adj_matrix)
@@ -248,10 +249,10 @@ def graph_construction(dataset, graph_cfg, cfg):
             if get_graph_summary:
                 x_tensor = graph_signal_summary(signals)
             else:
-                x_tensor = signals[:, np.logical_and(freqs >= 0.5, freqs <= 30)]
+                x_tensor = signals # np.logical_and(freqs >= 0.5, freqs <= 30)
 
             x_tensor = torch.from_numpy(x_tensor)
-            pyg_graph = torch_geometric.data.Data(x=x_tensor, edge_index=edge_index) # edge_weight=edge_weight
+            pyg_graph = torch_geometric.data.Data(x=x_tensor, edge_index=edge_index, edge_attr=edge_weight) # edge_weight=edge_weight
 
             if data_set != "test":
                 pyg_graph.y = torch.tensor(dataset[i][1], dtype=torch.int64)
