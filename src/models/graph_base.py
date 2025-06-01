@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-05-26 by roduit -*-
+# -*- Last revision: 2025-06-01 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
@@ -13,16 +13,15 @@ import pandas as pd
 import mlflow
 from torcheval.metrics.functional import binary_f1_score
 from torch.utils.data import DataLoader
+import tempfile
+import os
+from sklearn.metrics import confusion_matrix
 
 
 # import files
 import constants
 from train import *
-
-"""
-TO BE TESTED...
-"""
-
+from plots import plot_cm_matrix
 
 class GraphBase(torch.nn.Module):
     """
@@ -61,7 +60,7 @@ class GraphBase(torch.nn.Module):
                 # Training
                 train_loss = self._epoch(loader_tr, train=True)
                 self.train_losses.append(train_loss)
-                train_accuracy, train_f1_score = self.predict(loader_tr)
+                train_accuracy, train_f1_score, cm_train = self.predict(loader_tr)
 
                 mlflow.log_metric("train_f1_score ", train_f1_score, step=e + 1)
                 mlflow.log_metric("train_accuracy", train_accuracy, step=e + 1)
@@ -70,7 +69,22 @@ class GraphBase(torch.nn.Module):
                 # Validation
                 val_loss = self._epoch(loader_val, train=False)
                 self.val_losses.append(val_loss)
-                val_accuracy, val_f1_score = self.predict(loader_val)
+                val_accuracy, val_f1_score, cm_val = self.predict(loader_val)
+
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    os.makedirs(tmp_dir, exist_ok=True)
+                    plot_cm_matrix(
+                        cm_train,
+                        set="train",
+                        file_pth=tmp_dir,
+                        epoch=e + 1,
+                    )
+                    plot_cm_matrix(
+                        cm_val,
+                        set="val",
+                        file_pth=tmp_dir,
+                        epoch=e + 1,
+                    )
                 
                 mlflow.log_metric("val_f1_score ", val_f1_score, step=e + 1)
                 mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
@@ -112,9 +126,8 @@ class GraphBase(torch.nn.Module):
         with torch.no_grad():
             for batch in loader:
                 batch = batch.to(self.device)
-                logits = self(batch)
-                preds = (logits > 0).int().view(-1)
-                all_predictions.append(preds.cpu())
+                predictions = self.predict_batch(batch)
+                all_predictions.append(predictions.cpu())
                 all_targets.append(batch.y.view(-1).cpu().long())
 
         all_predictions = torch.cat(all_predictions)
@@ -128,7 +141,13 @@ class GraphBase(torch.nn.Module):
             all_predictions,
             all_targets
         )
-        return accuracy, float(f1)
+
+        cm = confusion_matrix(
+            all_targets.cpu(),
+            all_predictions.cpu(),
+            
+        )
+        return accuracy, float(f1), cm
 
 
 

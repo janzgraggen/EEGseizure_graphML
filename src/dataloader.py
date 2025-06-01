@@ -16,14 +16,14 @@ from tqdm import tqdm
 import torch_geometric
 import torch
 import numpy as np
-# Import modules
-import constants
-from transform_func import *
 from scipy import signal
 from scipy.signal import welch
 from scipy.signal import coherence
 
-
+# Import modules
+import constants
+from transform_func import *
+from utils import is_mostly_zero_record
 
 def parse_datasets(datasets:list, config:dict) -> tuple[DataLoader, DataLoader, DataLoader]:
     """Parse the datasets from the configuration file.
@@ -107,10 +107,17 @@ def load_data(dataset_cfg: dict, config:dict) -> DataLoader:
     dataset = EEGDataset(
         clips, signals_root=path, signal_transform=tfm, prefetch=True, return_id=get_id
     )
+
+    if set_name != "test":
+        n_classes = len(np.unique(dataset.get_label_array()))
+
+    # remove samples with leading zero values
+    val_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0])]
+
+    dataset = torch.utils.data.Subset(dataset, val_indices)
     sampler = None
 
     if sampling:
-        n_classes = len(np.unique(dataset.get_label_array()))
         weights = make_weights_for_balanced_classes(dataset, n_classes)
         sampler = WeightedRandomSampler(weights, size * len(dataset), replacement=True)
         shuffle = False
@@ -195,7 +202,6 @@ def graph_construction(dataset, graph_cfg, cfg):
 
 
     elif graph_type == 'correlation':
-        print(graph_cfg)
         edge_threshold =  graph_cfg.get("edge_threshold", None)
         correlation_graphs = []
 

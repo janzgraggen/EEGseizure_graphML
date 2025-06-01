@@ -99,6 +99,7 @@ and replacing `/path/to/experiment` with the desired experiment path, `username`
 - fcn_base_adam : 0.65510
 - cnn_base_adam : 0.41078
 - fcn_fft: 0.50754
+- GCN (39f7):  0.76170
 
 ## Contributors
 This project has been elaborated by Vincent Roduit, Caspar Henking, Aurel Mäder and Jan Zgraggen during the 2025 spring semester at EPFL.

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-06-01 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Implement the base model-*-
 
@@ -161,8 +161,8 @@ class BaseModel(torch.nn.Module):
         
         # Compute confusion matrix
         cm = confusion_matrix(
-            all_predictions.cpu(),
             all_targets.cpu(),
+            all_predictions.cpu(),
         )
 
         return accuracy, float(f1), cm
