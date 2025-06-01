@@ -4,9 +4,6 @@ name: "gcn_coherence_band_energies"
 description: "Two-layer GCN for seizure prediction, using correlation graph."
 task: "seizure_prediction"
 
-
-
-
 # Data (same splits as before)
 config_dataset:
   val_size: 0.2
