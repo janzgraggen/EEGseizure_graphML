@@ -15,11 +15,6 @@ import torch.nn.functional as F
 from models.graph_base import GraphBase
 import constants
 
-
-"""
-TO BE TESTED...
-"""
-
 class GAT(GraphBase):
     def __init__(self, in_channels: int, hidden_channels: int, heads=4):
         super().__init__()
@@ -46,12 +41,10 @@ class GCN(GraphBase):
         self.device = constants.DEVICE
 
         self.conv1 = nngc.GCNConv(in_channels, hidden_channels)
-        self.bn1 = nngc.BatchNorm(hidden_channels)
-        self.dropout1 = nn.Dropout(0.2)
+        self.norm1 = nn.LayerNorm(hidden_channels)
 
         self.conv2 = nngc.GCNConv(hidden_channels, hidden_channels)
-        self.bn2 = nngc.BatchNorm(hidden_channels)
-        self.dropout2 = nn.Dropout(0.2)
+        self.norm2 = nn.LayerNorm(hidden_channels)
 
         self.lin = nn.Linear(hidden_channels, 1)
         self.dropout = nn.Dropout(0.5)
@@ -74,17 +67,15 @@ class GCN(GraphBase):
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
         x = self.conv1(x, edge_index)
-        x = self.bn1(x)
+        x = self.norm1(x)
         x = F.leaky_relu(x, negative_slope=self.leaky_relu_slope)
-        x = self.dropout1(x)
 
         x_res = x
 
         x = self.conv2(x, edge_index)
-        x = self.bn2(x)
+        x = self.norm2(x)
         x = x + x_res
         x = F.leaky_relu(x, negative_slope=self.leaky_relu_slope)
-        x = self.dropout2(x)
 
         x = nngc.global_mean_pool(x, batch)
         x = self.dropout(x)

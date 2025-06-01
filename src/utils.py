@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-29 by Caspar -*-
+# -*- Last revision: 2025-06-01 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Utils functions -*-
 
@@ -86,3 +86,25 @@ def choose_model(cfg: dict) -> torch.nn.Module:
         return GCN.from_config(model_cfg=model_cfg)
     else:
         raise ValueError(f"Model {model_name} not found.")
+    
+def is_mostly_zero_record(eeg, threshold=0.2):
+    """ Check if the EEG record is mostly zero.
+    This function checks if a given EEG record is mostly zero by calculating
+    the cumulative sum of the absolute signal across channels and determining
+    if the start of the signal exceeds a specified threshold.
+    Args:
+        eeg (np.ndarray): EEG data with shape (channels, time).
+        threshold (float): Threshold for determining if the record is mostly zero.
+                           Default is 0.2 (20%).
+    Returns:
+        bool: True if the record is mostly zero, False otherwise.
+    """
+    # Sum absolute signal across channels => shape: (time,)
+    signal_magnitude = np.sum(np.abs(eeg), axis=0)
+    cumsum = np.cumsum(signal_magnitude)
+    total = cumsum[-1]
+    if total == 0:
+        return True  # fully zero record
+
+    start_idx = np.argmax(cumsum >= 0.01 * total)
+    return (start_idx / eeg.shape[1]) > threshold
