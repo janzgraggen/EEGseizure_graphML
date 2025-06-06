@@ -1,0 +1,48 @@
+
+experiment: "gcn-lstm"
+name: "lstm"
+description: "Two-layer GCN with LSTM layer at the end for seizure prediction, using correlation graph."
+task: "seizure_prediction"
+
+# Data
+config_dataset:
+  val_size: 0.2
+  tfm: "wavelet"
+  graph: 
+      type: "correlation"
+      edge_threshold: 0.8
+  num_workers: 4
+  batch_size: 64
+
+datasets:
+-
+  set: "train"
+  path: "/home/ogut/data/train"
+  sampling: True
+  size: 1
+  shuffle: True
+
+-
+  set: "val"
+  path: "/home/ogut/data/train"
+  shuffle: False
+
+-
+  set: "test"
+  path: "/home/ogut/data/test"
+  shuffle: False
+
+# Model
+model:
+  name: "LSTMGNN"
+  n_epochs: 142
+  optimizer: "Adam"
+  use_scheduler: False
+  learning_rate: 0.001
+  criterion: "BCEWithLogitsLoss"
+  config:
+    in_channels:  # number of features per node (e.g. timepoints after FFT)
+      2833
+    hidden_channels_gcn: 64
+
+    hidden_channels_lstm: 64

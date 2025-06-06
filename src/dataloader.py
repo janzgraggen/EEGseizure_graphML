@@ -114,7 +114,7 @@ def load_data(dataset_cfg: dict, config:dict) -> DataLoader:
     # remove samples with leading zero values
     val_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0])]
 
-    dataset = torch.utils.data.Subset(dataset, val_indices)
+    #dataset = torch.utils.data.Subset(dataset, val_indices)
     sampler = None
 
     if sampling:
@@ -294,6 +294,8 @@ def get_transform(tfm_name: str) -> callable:
         return time_filtering
     elif tfm_name == "clean":
         return clean_input
+    elif tfm_name == "wavelet":
+        return wavelet_transform_filtering
     else:
         return None
 
