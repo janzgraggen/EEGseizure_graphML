@@ -85,7 +85,7 @@ def wavelet_transform_filtering(x: np.ndarray) -> np.ndarray:
         coeffs_per_channel.append(detail_coeffs)
 
     # Stack all channels (shape: [features, channels])
-    wavelet_data = np.stack(coeffs_per_channel, axis=-1)g
+    wavelet_data = np.stack(coeffs_per_channel, axis=-1)
 
     # Log transform for numerical stability
     wavelet_data = np.log(np.where(np.abs(wavelet_data) > 1e-8, np.abs(wavelet_data), 1e-8))
