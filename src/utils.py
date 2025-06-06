@@ -13,7 +13,7 @@ import torch
 import yaml
 
 # Import modules
-from models.graph_models import GAT, GCN, LSTMGNN, LSTMGAT
+from models.graph_models import GAT, GCN, LSTMGNN, LSTMGAT, EccGatGNN
 from models.cnn import CNN
 from models.fcn import FCN
 from models.resnet import ResNet
@@ -84,6 +84,9 @@ def choose_model(cfg: dict) -> torch.nn.Module:
         return LSTMGAT.from_config(model_cfg=model_cfg)
     elif model_name == "GCN":
         return GCN.from_config(model_cfg=model_cfg)
+    elif model_name == "EccGatGNN":
+        return EccGatGNN.from_config(model_cfg=model_cfg)
+    
     else:
         raise ValueError(f"Model {model_name} not found.")
     
@@ -100,11 +103,8 @@ def is_mostly_zero_record(eeg, threshold=0.2):
         bool: True if the record is mostly zero, False otherwise.
     """
     # Sum absolute signal across channels => shape: (time,)
-    signal_magnitude = np.sum(np.abs(eeg), axis=0)
-    cumsum = np.cumsum(signal_magnitude)
-    total = cumsum[-1]
-    if total == 0:
-        return True  # fully zero record
+    signal_magnitude = np.sum(np.abs(eeg), axis=1)
+    length = len(signal_magnitude)
+    zeros = (signal_magnitude== 0).sum()
 
-    start_idx = np.argmax(cumsum >= 0.01 * total)
-    return (start_idx / eeg.shape[1]) > threshold
+    return (zeros / length) > threshold

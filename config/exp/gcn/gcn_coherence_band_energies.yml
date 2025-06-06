@@ -6,7 +6,7 @@ task: "seizure_prediction"
 
 # Data (same splits as before)
 config_dataset:
-  val_size: 0.2
+  val_size: 0.05
   tfm: "time_filtering"
   graph:
       type: "coherence_band_energies"
@@ -38,7 +38,7 @@ model:
   n_epochs: 100
   optimizer: "Adam"
   use_scheduler: False
-  learning_rate: 2e-4
+  learning_rate: 0.0002
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)
