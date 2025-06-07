@@ -126,7 +126,7 @@ def load_data(dataset_cfg: dict, config:dict) -> DataLoader:
     graph_cfg = config.get("graph", None)
     
     if graph_cfg is not None:
-        dataset = graph_construction(dataset, graph_cfg, dataset_cfg)
+        dataset, _ = graph_construction(dataset, graph_cfg, dataset_cfg)
 
         return torch_geometric.loader.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
@@ -172,8 +172,15 @@ def graph_construction(dataset, graph_cfg, cfg):
 
         adj_matrix = distance_df.pivot(index='from', columns='to', values='distance')
         adj_matrix = adj_matrix.reindex(distance_df['from'].unique(), axis=0).reindex(distance_df['from'].unique(),
-                                                                                      axis=1)
-        adj_matrix = np.where(adj_matrix < edge_threshold, adj_matrix, 0)
+                                                                                      axis=1).to_numpy()
+        with np.errstate(divide='ignore'):
+            adj_matrix = 1 / adj_matrix
+        np.fill_diagonal(adj_matrix, 0)
+        adj_matrix = (adj_matrix - np.min(adj_matrix)) / (np.max(adj_matrix) - np.min(adj_matrix))
+
+        adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
+
+
 
         distance_graphs = []
         for i in range(len(dataset)):
@@ -198,18 +205,26 @@ def graph_construction(dataset, graph_cfg, cfg):
 
             distance_graphs.append(pyg_graph)
 
-        return distance_graphs
+        return distance_graphs, adj_matrix
 
 
     elif graph_type == 'correlation':
         edge_threshold =  graph_cfg.get("edge_threshold", None)
         correlation_graphs = []
+        correlation_adj_matrix = []
 
         for i in range(len(dataset)):
             data = np.asarray(dataset[i][0].T, dtype=np.float32) 
             adj_matrix = safe_corrcoef(data)
             adj_matrix = np.where(adj_matrix > edge_threshold, adj_matrix, 0)
             np.fill_diagonal(adj_matrix, 0)
+
+            if np.min(adj_matrix) == np.max(adj_matrix):
+                adj_matrix = np.zeros_like(adj_matrix)
+            else:
+                adj_matrix = (adj_matrix - np.min(adj_matrix)) / (np.max(adj_matrix) - np.min(adj_matrix))
+
+
 
 
             adj_tensor = torch.tensor(adj_matrix)
@@ -231,13 +246,16 @@ def graph_construction(dataset, graph_cfg, cfg):
                 pyg_graph.id = dataset[i][1]
 
             correlation_graphs.append(pyg_graph)
+            correlation_adj_matrix.append(adj_matrix)
 
-        return correlation_graphs
+        return correlation_graphs, correlation_adj_matrix
 
 
     elif graph_type == 'coherence_band_energies':
         edge_threshold =  graph_cfg.get("edge_threshold", None)
         coherence_energie_graphs = []
+        coherence_adj_matrix = []
+
 
         for i in range(len(dataset)):
 
@@ -246,6 +264,13 @@ def graph_construction(dataset, graph_cfg, cfg):
             adj_matrix = coherence_matrix[np.logical_and(f >= 0.5, f <= 30), : , :].mean(axis=0)
             adj_matrix = np.where(adj_matrix >= edge_threshold, adj_matrix, 0)
             np.fill_diagonal(adj_matrix, 0)
+
+            if np.min(adj_matrix) == np.max(adj_matrix):
+                adj_matrix = np.zeros_like(adj_matrix)
+            else:
+                adj_matrix = (adj_matrix - np.min(adj_matrix)) / (np.max(adj_matrix) - np.min(adj_matrix))
+
+
 
             adj_tensor = torch.tensor(adj_matrix)
             edge_index, edge_weight = torch_geometric.utils.dense_to_sparse(adj_tensor)
@@ -266,8 +291,9 @@ def graph_construction(dataset, graph_cfg, cfg):
                 pyg_graph.id = dataset[i][1]
 
             coherence_energie_graphs.append(pyg_graph)
+            coherence_adj_matrix.append(adj_matrix)
 
-        return coherence_energie_graphs
+        return coherence_energie_graphs, coherence_adj_matrix
 
     else:
         raise ValueError("This graph construction method is not implemented.")
