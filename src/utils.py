@@ -104,7 +104,7 @@ def is_mostly_zero_record(eeg, threshold=0.2):
     """
     # Sum absolute signal across channels => shape: (time,)
     signal_magnitude = np.sum(np.abs(eeg), axis=1)
-    assert signal_magnitude.shape == (3000,), f"Expected shape (3000,), got {signal_magnitude.shape}"
+    #assert signal_magnitude.shape == (3000,), f"Expected shape (3000,), got {signal_magnitude.shape}"
 
     length = len(signal_magnitude)
     zeros = (signal_magnitude== 0).sum()

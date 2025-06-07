@@ -251,7 +251,7 @@ def graph_construction(dataset, graph_cfg, cfg):
         return correlation_graphs, correlation_adj_matrix
 
 
-    elif graph_type == 'coherence_band_energies':
+    elif graph_type == 'coherence':
         edge_threshold =  graph_cfg.get("edge_threshold", None)
         coherence_energie_graphs = []
         coherence_adj_matrix = []
@@ -275,7 +275,7 @@ def graph_construction(dataset, graph_cfg, cfg):
             adj_tensor = torch.tensor(adj_matrix)
             edge_index, edge_weight = torch_geometric.utils.dense_to_sparse(adj_tensor)
 
-            freqs, signals = signal.welch(np.asarray(dataset[i][0].T, dtype=np.float32), fs=250, nperseg=250)
+            signals = np.asarray(dataset[i][0].T, dtype=np.float32)  # shape: (n_channels, signal_len)
 
             if get_graph_summary:
                 x_tensor = graph_signal_summary(signals)
@@ -320,6 +320,8 @@ def get_transform(tfm_name: str) -> callable:
         return time_filtering
     elif tfm_name == "clean":
         return clean_input
+    elif tfm_name == "psd":
+        return power_spectral_density
     elif tfm_name == "wavelet":
         return wavelet_transform_filtering
     else:

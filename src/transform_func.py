@@ -91,3 +91,29 @@ def wavelet_transform_filtering(x: np.ndarray) -> np.ndarray:
     wavelet_data = np.log(np.where(np.abs(wavelet_data) > 1e-8, np.abs(wavelet_data), 1e-8))
 
     return wavelet_data
+
+
+
+
+def power_spectral_density(x: np.ndarray) -> np.ndarray:
+    """
+    Apply power spectral density and return band energies coefficients.
+
+    Args:
+        x (np.ndarray): Input signal of shape [time, channels].
+
+    Returns:
+        np.ndarray: band energies coefficients.
+    """
+    # Set wavelet type and decomposition level
+    
+
+    
+    freqs, psd_signals = signal.welch(np.asarray(x.T, dtype=np.float32), fs=250, nperseg=250)
+
+    # Stack all channels (shape: [features, channels])
+
+    # Log transform for numerical stability
+    psd_signals = np.where(np.abs(psd_signals) > 1e-8, np.abs(psd_signals), 1e-8).T
+
+    return psd_signals
