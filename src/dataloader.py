@@ -25,23 +25,29 @@ import constants
 from transform_func import *
 from utils import is_mostly_zero_record
 
-def parse_datasets(datasets:list, config:dict) -> tuple[DataLoader, DataLoader, DataLoader]:
-    """Parse the datasets from the configuration file.
+def parse_datasets(datasets: list, config: dict, fold: int = 0) -> tuple[DataLoader, DataLoader, DataLoader]:
+    """Parse the datasets from the configuration file and support cross-validation via fold index.
 
     Args:
-        cfg (dict): Configuration dictionary containing the informations about the data
+        datasets (list): List of dataset config dicts.
+        config (dict): General config dictionary.
+        fold (int): Current fold index for cross-validation.
 
     Returns:
-        tuple: A tuple containing the loaders for train, validation, and test datasets.
+        tuple: DataLoaders for train, val, and test sets.
     """
-
-    num_datasets = len(datasets)
-    if num_datasets == 0:
+    if len(datasets) == 0:
         raise ValueError("No datasets provided in the configuration file.")
 
-    for i in tqdm(range(num_datasets), desc="Loading datasets", unit="dataset"):
-        dataset = datasets[i]
+    loader_train, loader_val, loader_test = None, None, None
+
+    for dataset in datasets:
         set_type = dataset.get("set", None)
+
+        # Inject fold for train and val sets
+        if set_type in ["train", "val"]:
+            dataset["fold"] = fold
+
         if set_type == "train":
             loader_train = load_data(dataset_cfg=dataset, config=config)
         elif set_type == "val":
@@ -50,33 +56,20 @@ def parse_datasets(datasets:list, config:dict) -> tuple[DataLoader, DataLoader, 
             loader_test = load_data(dataset_cfg=dataset, config=config)
         else:
             raise ValueError(f"Unknown dataset type: {set_type}")
+
     return loader_train, loader_val, loader_test
+from sklearn.model_selection import StratifiedKFold
 
-def load_data(dataset_cfg: dict, config:dict) -> DataLoader:
-    """Load the data from the path and return a DataLoader.
-
-    Args:
-        cfg (dict): Configuration dictionary containing the informations about the data
-
-    Returns:
-        loader (DataLoader): A DataLoader object containing the data.
-    """
-    # Read clips
+def load_data(dataset_cfg: dict, config: dict) -> DataLoader:
+    """Load data and split according to fold for cross-validation."""
     path = dataset_cfg.get("path", None)
     if path is None:
         raise ValueError("No data path provided in the configuration file.")
-    
-    clips_path = os.path.join(path, "segments.parquet")
-    clips = pd.read_parquet(clips_path)
 
-    val_size = config.get("val_size", None)
-
-    # Get transform
+    clips = pd.read_parquet(os.path.join(path, "segments.parquet"))
     tfm_name = config.get("tfm", None)
     tfm = get_transform(tfm_name=tfm_name)
 
-
-    # Get additional parameters
     batch_size = config.get("batch_size", constants.BATCH_SIZE)
     shuffle = dataset_cfg.get("shuffle", True)
     set_name = dataset_cfg.get("set", None)
@@ -85,54 +78,55 @@ def load_data(dataset_cfg: dict, config:dict) -> DataLoader:
     size = int(dataset_cfg.get("size", 1))
     num_workers = config.get("num_workers", constants.NUM_WORKERS)
 
-    if set_name != "test":
-        val_size = float(val_size)
+    fold = dataset_cfg.get("fold", 0)  # Default fold = 0
+
+    if set_name in ["train", "val"]:
         labels = clips["label"].values
-        indices = clips.index.values
-        
-        train_indices, val_indices = train_test_split(
-            indices, test_size=val_size, stratify=labels, random_state=42
-        )
-    
-    if set_name == "train":
-        # Use train indices for training
-        clips = clips.loc[train_indices]
-        clips.sort_index(inplace=True)
-    elif set_name == "val":
-        # Use validation indices for validation
-        clips = clips.loc[val_indices]
+        indices = np.arange(len(clips))
+        n_splits = config.get("n_splits", 5)
+
+        skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+        splits = list(skf.split(indices, labels))
+        train_idx, val_idx = splits[fold]
+
+        if set_name == "train":
+            clips = clips.iloc[train_idx]
+        elif set_name == "val":
+            clips = clips.iloc[val_idx]
+
         clips.sort_index(inplace=True)
 
-    # Create dataset
     dataset = EEGDataset(
-        clips, signals_root=path, signal_transform=tfm, prefetch=True, return_id=get_id
+        clips,
+        signals_root=path,
+        signal_transform=tfm,
+        prefetch=True,
+        return_id=get_id
     )
 
-    if set_name != "test":
-        n_classes = len(np.unique(dataset.get_label_array()))
+    # Remove zero-value samples
+    if tfm_name == "fusion":
+        valid_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0].fft)]
+    else:
+        valid_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0])]
 
-    # remove samples with leading zero values
-    val_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0])]
-
-    #dataset = torch.utils.data.Subset(dataset, val_indices)
+    dataset = torch.utils.data.Subset(dataset, valid_indices)
     sampler = None
 
     if sampling:
+        n_classes = len(np.unique(dataset.dataset.get_label_array()))
         weights = make_weights_for_balanced_classes(dataset, n_classes)
         sampler = WeightedRandomSampler(weights, size * len(dataset), replacement=True)
         shuffle = False
 
-    # Graph construction
     graph_cfg = config.get("graph", None)
-    
+
     if graph_cfg is not None:
         dataset, _ = graph_construction(dataset, graph_cfg, dataset_cfg)
-
+        
         return torch_geometric.loader.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
-
-    return loader
+    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
 
 def make_weights_for_balanced_classes(samples:Dataset, nclasses:int) -> list:
     """Code taken from https://stackoverflow.com/questions/67799246/weighted-random-sampler-oversample-or-undersample

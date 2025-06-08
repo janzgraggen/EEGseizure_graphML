@@ -10,6 +10,7 @@ import argparse
 import mlflow
 import matplotlib
 import os
+import numpy as np
 
 matplotlib.use("Agg")  # Use non interactive backend
 
@@ -20,55 +21,70 @@ from dataloader import parse_datasets
 import constants
 
 def main(args: argparse.Namespace):
-    """Define the main function to run the project.
-
-    Args:
-        args (argparse.Namespace) : Arguments from the command line.
-    """
-    # Check if config file exists
     cfg_file = args.cfg
     seed = args.seed
 
     set_seed(seed=seed)
     cfg = read_yml(cfg_file=cfg_file)
 
-    # Get main infos
     experiment = cfg.get("experiment", "Default")
     name = cfg.get("name", "debug")
+    model_cfg = cfg.get("model", {})
+    datasets_cfg = cfg.get("datasets", [])
+    config_dataset = cfg.get("config_dataset", {})
+    n_splits = config_dataset.get("n_splits", 5)
 
-    # Set mlflow informations
     mlflow.set_tracking_uri(uri="./project/mlruns")
     mlflow.set_experiment(experiment)
-    run_name = "{}:{}:{}".format(experiment, name, seed)
 
-    with mlflow.start_run(run_name=run_name):
+    fold_metrics = []
 
-        run_id = mlflow.active_run().info.run_id
+    for fold in range(n_splits):
+        print(f"\n========== Fold {fold + 1}/{n_splits} ==========\n")
+        run_name = f"{experiment}:{name}:seed{seed}:fold{fold}"
+        with mlflow.start_run(run_name=run_name):
+            run_id = mlflow.active_run().info.run_id
 
-        model_cfg = cfg.get("model", {})
-        model = choose_model(cfg=model_cfg)
+            set_seed(seed + fold)
 
-        datasets_cfg = cfg.get("datasets", {})
-        config_dataset = cfg.get("config_dataset", {})
-        loader_train, loader_val, loader_test = parse_datasets(datasets=datasets_cfg, config=config_dataset)
+            loader_train, loader_val, loader_test = parse_datasets(
+                datasets=datasets_cfg,
+                config=config_dataset,
+                fold=fold
+            )
 
-        print("Logging model...")
-        log_cfg(cfg=model_cfg)
-        log_model_summary(model=model)
+            model = choose_model(cfg=model_cfg)
 
-        print("Training model...")
-        model.fit(
-            loader_train,
-            loader_val,
-            num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
-            learning_rate=float(model_cfg.get("learning_rate", constants.LEARNING_RATE)),
-            criterion_name=model_cfg.get("criterion", constants.CRITERION),
-            optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
-        )
+            log_cfg(cfg=model_cfg)
+            log_model_summary(model=model)
 
-        model.predict(loader=loader_train)
+            print(f"Training model for fold {fold}...")
+            model.fit(
+                loader_train,
+                loader_val,
+                num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
+                learning_rate=float(model_cfg.get("learning_rate", constants.LEARNING_RATE)),
+                criterion_name=model_cfg.get("criterion", constants.CRITERION),
+                optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
+            )
 
-        model.create_submission(loader=loader_test, path=os.path.join(constants.SUBMISSION_DIR, str(run_id) + ".csv"))
+            val_metrics = model.evaluate(loader_val)
+            fold_metrics.append(val_metrics)
+            for k, v in val_metrics.items():
+                mlflow.log_metric(k, v)
+
+            model.create_submission(
+                loader=loader_test,
+                path=os.path.join(constants.SUBMISSION_DIR, f"{run_id}_fold{fold}.csv")
+            )
+
+    print("\n========== Cross-Validation Summary ==========")
+    if fold_metrics:
+        keys = fold_metrics[0].keys()
+        for k in keys:
+            values = [m[k] for m in fold_metrics]
+            mean, std = np.mean(values), np.std(values)
+            print(f"{k}: {mean:.4f} ± {std:.4f}")
 
 if __name__ == "__main__":
 
