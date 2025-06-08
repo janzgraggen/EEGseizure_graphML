@@ -96,7 +96,11 @@ class GraphBase(torch.nn.Module):
                         "F1 (train)": train_f1_score,
                         f"\033[1m\033[31mF1 (VAL)\033[0m": val_f1_score,
                     })
-                    pbar.update(1)
+                else:
+                    pbar.set_postfix({
+                        "F1 (train)": train_f1_score,
+                    })
+                pbar.update(1)
 
     def predict_batch(self, batch):
         """
