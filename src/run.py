@@ -23,10 +23,10 @@ import constants
 def main(args: argparse.Namespace):
     cfg_file = args.cfg
     seed = args.seed
-
     set_seed(seed=seed)
-    cfg = read_yml(cfg_file=cfg_file)
 
+    ## CONFIGURATION
+    cfg = read_yml(cfg_file=cfg_file)
     experiment = cfg.get("experiment", "Default")
     name = cfg.get("name", "debug")
     model_cfg = cfg.get("model", {})
@@ -48,9 +48,6 @@ def main(args: argparse.Namespace):
         run_name = f"{experiment}:{name}:seed{seed}:fold{fold}"
         with mlflow.start_run(run_name=run_name):
             run_id = mlflow.active_run().info.run_id
-            set_seed(seed + fold)
-
-
             model = choose_model(cfg=model_cfg)
             log_cfg(cfg=model_cfg)
             
@@ -60,14 +57,12 @@ def main(args: argparse.Namespace):
 
             print(f"\n========== Fold {fold + 1}/{n_splits} ==========")
 
-
             loader_train, loader_val, loader_test = parse_datasets(
                 datasets=datasets_cfg,
                 config=config_dataset,
                 fold=fold
             )
 
-    
             model.fit(
                 loader_train,
                 loader_val,
@@ -76,6 +71,7 @@ def main(args: argparse.Namespace):
                 criterion_name=model_cfg.get("criterion", constants.CRITERION),
                 optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
             )
+
             tr_acc, tr_f1,_ =   model.predict(loader=loader_train)
             val_acc, val_f1,_ = model.predict(loader=loader_val)
             fold_metrics["train_accuracy"].append(tr_acc)
@@ -96,7 +92,6 @@ def main(args: argparse.Namespace):
     run_name = f"{experiment}:{name}:seed{seed}:all"
     with mlflow.start_run(run_name=run_name):
         run_id = mlflow.active_run().info.run_id
-        set_seed(seed + fold)
         model = choose_model(cfg=model_cfg)
         log_cfg(cfg=model_cfg)
         loader_train, loader_val, loader_test = parse_datasets(
@@ -105,6 +100,7 @@ def main(args: argparse.Namespace):
                 fold=fold,
                 submission=True
             )
+        
         model.fit(
                 loader_train,
                 None,
