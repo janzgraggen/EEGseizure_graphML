@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-06-01 by roduit -*-
+# -*- Last revision: 2025-06-08 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
@@ -11,7 +11,7 @@ import torch_geometric
 from tqdm import tqdm
 import pandas as pd
 import mlflow
-from torcheval.metrics.functional import binary_f1_score
+from torcheval.metrics.functional import multiclass_f1_score
 from torch.utils.data import DataLoader
 import tempfile
 import os
@@ -136,10 +136,15 @@ class GraphBase(torch.nn.Module):
         # Compute accuracy
         accuracy = (all_predictions == all_targets).sum().item() / len(all_targets)
 
+        all_predictions = all_predictions.long()
+        all_targets = all_targets.long()
+
         # Compute F1 score
-        f1 = binary_f1_score(
+        f1 = multiclass_f1_score(
             all_predictions,
-            all_targets
+            all_targets,
+            average="macro",
+            num_classes=2
         )
 
         cm = confusion_matrix(

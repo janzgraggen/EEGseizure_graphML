@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-06-01 by roduit -*-
+# -*- Last revision: 2025-06-08 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Implement the base model-*-
 
@@ -12,7 +12,7 @@ import pandas as pd
 import mlflow
 import tempfile
 import os
-from torcheval.metrics.functional import binary_f1_score
+from torcheval.metrics.functional import multiclass_f1_score
 from torch.utils.data import DataLoader
 from sklearn.metrics import confusion_matrix
 
@@ -154,9 +154,10 @@ class BaseModel(torch.nn.Module):
         accuracy = correct / len(all_targets)
 
         # Compute F1 score
-        f1 = binary_f1_score(
+        f1 = multiclass_f1_score(
             all_predictions,
-            all_targets
+            all_targets,
+            average="macro",
         )
         
         # Compute confusion matrix

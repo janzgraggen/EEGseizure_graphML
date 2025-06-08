@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Jan Zgraggen -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-29 by Caspar -*-
+# -*- Last revision: 2025-06-08 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to load the data-*-
 
@@ -9,8 +9,6 @@
 import numpy as np
 from scipy import signal
 import numpy as np
-
-bp_filter = signal.butter(4, (0.5, 30), btype="bandpass", output="sos", fs=250)
 
 
 def time_filtering(x: np.ndarray) -> np.ndarray:
@@ -21,6 +19,7 @@ def time_filtering(x: np.ndarray) -> np.ndarray:
     Returns:
         np.ndarray: Filtered signal.
     """
+    bp_filter = signal.butter(4, (0.5, 30), btype="bandpass", output="sos", fs=250)
     return signal.sosfiltfilt(bp_filter, x, axis=0).copy()
 
 
