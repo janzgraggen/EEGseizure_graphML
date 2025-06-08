@@ -17,19 +17,19 @@ config_dataset:
 datasets:
 -
   set: "train"
-  path: "data/train"
+  path: "project/data/train"
   sampling: True
   size: 1
   shuffle: True
 
 -
   set: "val"
-  path: "data/train"
+  path: "project/data/train"
   shuffle: False
 
 -
   set: "test"
-  path: "data/test"
+  path: "project/data/test"
   shuffle: False
 
 # Model
@@ -38,10 +38,11 @@ model:
   n_epochs: 50
   optimizer: "Adam"
   use_scheduler: False
-  learning_rate: 0.0001
+  learning_rate: 0.0002
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)
       126
     hidden_channels: 32
     # edge_index will be passed in code (fixed electrode graph)
+    edge_attr_dim: 1
