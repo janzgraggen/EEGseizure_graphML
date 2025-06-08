@@ -9,6 +9,8 @@
 import numpy as np
 from scipy import signal
 import numpy as np
+import numpy as np
+import pywt
 
 
 def time_filtering(x: np.ndarray) -> np.ndarray:
@@ -55,11 +57,6 @@ def clean_input(x: np.ndarray) -> np.ndarray:
     x = (x - mean) / (std + 1e-6)
 
     return x
-
-
-
-import numpy as np
-import pywt
 
 def wavelet_transform_filtering(x: np.ndarray) -> np.ndarray:
     """

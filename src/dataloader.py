@@ -93,13 +93,14 @@ def load_data(dataset_cfg: dict, config: dict, submission:bool = False) -> DataL
     if set_name in ["train", "val"]:
         labels = clips["label"].values
         indices = np.arange(len(clips))
-        n_splits = config.get("n_splits", 5)
 
+        n_splits = config.get("n_splits", 5)
         skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
         splits = list(skf.split(indices, labels))
         train_idx, val_idx = splits[fold]
+        
         if submission:
-            train_idx = np.concatenate((train_idx, val_idx))
+            train_idx = indices
             val_idx = [0]  # Dummy index for submission
 
         if set_name == "train":
@@ -116,7 +117,7 @@ def load_data(dataset_cfg: dict, config: dict, submission:bool = False) -> DataL
         prefetch=True,
         return_id=get_id
     )
-
+    
     # Remove zero-value samples
     if tfm_name == "fusion":
         valid_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0].fft)]
