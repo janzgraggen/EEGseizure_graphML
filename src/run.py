@@ -37,15 +37,29 @@ def main(args: argparse.Namespace):
     mlflow.set_tracking_uri(uri="./project/mlruns")
     mlflow.set_experiment(experiment)
 
-    fold_metrics = []
+    fold_metrics = {
+        "train_accuracy": [],
+        "train_f1_score": [],
+        "val_accuracy": [],
+        "val_f1_score": [],
+    }
 
     for fold in range(n_splits):
-        print(f"\n========== Fold {fold + 1}/{n_splits} ==========\n")
         run_name = f"{experiment}:{name}:seed{seed}:fold{fold}"
         with mlflow.start_run(run_name=run_name):
             run_id = mlflow.active_run().info.run_id
-
             set_seed(seed + fold)
+
+
+            model = choose_model(cfg=model_cfg)
+            log_cfg(cfg=model_cfg)
+            
+            if fold == 0:
+                print(f"\n========== Model Summary ==========")
+                log_model_summary(model=model)
+
+            print(f"\n========== Fold {fold + 1}/{n_splits} ==========")
+
 
             loader_train, loader_val, loader_test = parse_datasets(
                 datasets=datasets_cfg,
@@ -53,12 +67,7 @@ def main(args: argparse.Namespace):
                 fold=fold
             )
 
-            model = choose_model(cfg=model_cfg)
-
-            log_cfg(cfg=model_cfg)
-            log_model_summary(model=model)
-
-            print(f"Training model for fold {fold}...")
+    
             model.fit(
                 loader_train,
                 loader_val,
@@ -67,24 +76,50 @@ def main(args: argparse.Namespace):
                 criterion_name=model_cfg.get("criterion", constants.CRITERION),
                 optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
             )
+            tr_acc, tr_f1,_ =   model.predict(loader=loader_train)
+            val_acc, val_f1,_ = model.predict(loader=loader_val)
+            fold_metrics["train_accuracy"].append(tr_acc)
+            fold_metrics["train_f1_score"].append(tr_f1)
+            fold_metrics["val_accuracy"].append(val_acc)
+            fold_metrics["val_f1_score"].append(val_f1)
 
-            val_metrics = model.evaluate(loader_val)
-            fold_metrics.append(val_metrics)
-            for k, v in val_metrics.items():
-                mlflow.log_metric(k, v)
-
-            model.create_submission(
-                loader=loader_test,
-                path=os.path.join(constants.SUBMISSION_DIR, f"{run_id}_fold{fold}.csv")
+    print(f"\n========== Fold Metrics ==========")
+    for metric, values in fold_metrics.items():
+        mean_value = np.mean(values)
+        std_value = np.std(values)
+        if metric.startswith("val_"):
+            print(f"\033[1m\033[31m{metric}\033[0m: {mean_value:.2f} ± {std_value:.2f}")
+        else:
+            print(f"{metric}: {mean_value:.2f} ± {std_value:.2f}")
+            
+    print(f"\n========== Train on all  ==========")
+    run_name = f"{experiment}:{name}:seed{seed}:all"
+    with mlflow.start_run(run_name=run_name):
+        run_id = mlflow.active_run().info.run_id
+        set_seed(seed + fold)
+        model = choose_model(cfg=model_cfg)
+        log_cfg(cfg=model_cfg)
+        loader_train, loader_val, loader_test = parse_datasets(
+                datasets=datasets_cfg,
+                config=config_dataset,
+                fold=fold,
+                submission=True
+            )
+        model.fit(
+                loader_train,
+                None,
+                num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
+                learning_rate=float(model_cfg.get("learning_rate", constants.LEARNING_RATE)),
+                criterion_name=model_cfg.get("criterion", constants.CRITERION),
+                optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
+                submission=True,
             )
 
-    print("\n========== Cross-Validation Summary ==========")
-    if fold_metrics:
-        keys = fold_metrics[0].keys()
-        for k in keys:
-            values = [m[k] for m in fold_metrics]
-            mean, std = np.mean(values), np.std(values)
-            print(f"{k}: {mean:.4f} ± {std:.4f}")
+        print(f"\n========== Create Submission ==========")
+        model.create_submission(
+            loader=loader_test,
+            path=os.path.join(constants.SUBMISSION_DIR, f"{run_id}_all.csv")
+        )
 
 if __name__ == "__main__":
 

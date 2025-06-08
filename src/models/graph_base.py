@@ -40,9 +40,10 @@ class GraphBase(torch.nn.Module):
             learning_rate=constants.LEARNING_RATE,
             criterion_name=constants.CRITERION,
             optimizer_name=constants.OPTIMIZER,
+            submission=False,
         ):
             self.train_losses = []
-            self.val_losses = []
+            if not submission: self.val_losses = []
 
             self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
             self.criterion = get_criterion(criterion_name)
@@ -62,38 +63,40 @@ class GraphBase(torch.nn.Module):
                 self.train_losses.append(train_loss)
                 train_accuracy, train_f1_score, cm_train = self.predict(loader_tr)
 
-                mlflow.log_metric("train_f1_score ", train_f1_score, step=e + 1)
+                mlflow.log_metric("train_f1_score", train_f1_score, step=e + 1)
                 mlflow.log_metric("train_accuracy", train_accuracy, step=e + 1)
                 mlflow.log_metric("train_loss", train_loss, step=e + 1)
 
-                # Validation
-                val_loss = self._epoch(loader_val, train=False)
-                self.val_losses.append(val_loss)
-                val_accuracy, val_f1_score, cm_val = self.predict(loader_val)
+                if not submission:
+                    # Validation
+                    val_loss = self._epoch(loader_val, train=False)
+                    self.val_losses.append(val_loss)
+                    val_accuracy, val_f1_score, cm_val = self.predict(loader_val)
 
-                with tempfile.TemporaryDirectory() as tmp_dir:
-                    os.makedirs(tmp_dir, exist_ok=True)
-                    plot_cm_matrix(
-                        cm_train,
-                        set="train",
-                        file_pth=tmp_dir,
-                        epoch=e + 1,
-                    )
-                    plot_cm_matrix(
-                        cm_val,
-                        set="val",
-                        file_pth=tmp_dir,
-                        epoch=e + 1,
-                    )
-                
-                mlflow.log_metric("val_f1_score ", val_f1_score, step=e + 1)
-                mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
-                mlflow.log_metric("val_loss", val_loss, step=e + 1)
+                    with tempfile.TemporaryDirectory() as tmp_dir:
+                        os.makedirs(tmp_dir, exist_ok=True)
+                        plot_cm_matrix(
+                            cm_train,
+                            set="train",
+                            file_pth=tmp_dir,
+                            epoch=e + 1,
+                        )
+                        plot_cm_matrix(
+                            cm_val,
+                            set="val",
+                            file_pth=tmp_dir,
+                            epoch=e + 1,
+                        )
+                    
+                    mlflow.log_metric("val_f1_score", val_f1_score, step=e + 1)
+                    mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
+                    mlflow.log_metric("val_loss", val_loss, step=e + 1)
 
-                pbar.set_postfix({"\ntrain_loss": train_loss, "val_loss": val_loss,
-                    "\ntrain_f1_score": train_f1_score, "val_f1_score": val_f1_score,
-                    "\ntrain_accuracy": train_accuracy, "val_accuracy": val_accuracy})
-                pbar.update(1) 
+                    pbar.set_postfix({
+                        "F1 (train)": train_f1_score,
+                        f"\033[1m\033[31mF1 (VAL)\033[0m": val_f1_score,
+                    })
+                    pbar.update(1)
 
     def predict_batch(self, batch):
         """

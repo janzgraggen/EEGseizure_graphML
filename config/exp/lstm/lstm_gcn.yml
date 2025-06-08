@@ -46,4 +46,4 @@ model:
       354 
     hidden_channels_gcn: 64
 
-    hidden_channels_lstm: 128
+    hidden_channels_lstm: 128 

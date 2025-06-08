@@ -19,13 +19,14 @@ import numpy as np
 from scipy import signal
 from scipy.signal import welch
 from scipy.signal import coherence
+from sklearn.model_selection import StratifiedKFold
 
 # Import modules
 import constants
 from transform_func import *
 from utils import is_mostly_zero_record
 
-def parse_datasets(datasets: list, config: dict, fold: int = 0) -> tuple[DataLoader, DataLoader, DataLoader]:
+def parse_datasets(datasets: list, config: dict, fold: int = 0, submission: bool= False) -> tuple[DataLoader, DataLoader, DataLoader]:
     """Parse the datasets from the configuration file and support cross-validation via fold index.
 
     Args:
@@ -41,9 +42,16 @@ def parse_datasets(datasets: list, config: dict, fold: int = 0) -> tuple[DataLoa
 
     loader_train, loader_val, loader_test = None, None, None
 
-    for dataset in datasets:
+    for i in tqdm(range(len(datasets)), desc="Loading datasets", unit="dataset"):
+        dataset = datasets[i]
         set_type = dataset.get("set", None)
-
+        if submission: 
+            if set_type == "train":
+                sumbission_loader_train = load_data(dataset_cfg=dataset, config=config, submission=True)
+            elif set_type == "test":
+                submission_loader_test = load_data(dataset_cfg=dataset, config=config, submission=True)
+            else:
+                continue
         # Inject fold for train and val sets
         if set_type in ["train", "val"]:
             dataset["fold"] = fold
@@ -52,15 +60,17 @@ def parse_datasets(datasets: list, config: dict, fold: int = 0) -> tuple[DataLoa
             loader_train = load_data(dataset_cfg=dataset, config=config)
         elif set_type == "val":
             loader_val = load_data(dataset_cfg=dataset, config=config)
-        elif set_type == "test":
+        elif set_type == "test" and submission:
             loader_test = load_data(dataset_cfg=dataset, config=config)
         else:
+            if set_type == "test" and not submission: continue
             raise ValueError(f"Unknown dataset type: {set_type}")
-
+    if submission:
+        return sumbission_loader_train,  None , submission_loader_test
     return loader_train, loader_val, loader_test
-from sklearn.model_selection import StratifiedKFold
 
-def load_data(dataset_cfg: dict, config: dict) -> DataLoader:
+
+def load_data(dataset_cfg: dict, config: dict, submission:bool = False) -> DataLoader:
     """Load data and split according to fold for cross-validation."""
     path = dataset_cfg.get("path", None)
     if path is None:
@@ -88,6 +98,9 @@ def load_data(dataset_cfg: dict, config: dict) -> DataLoader:
         skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
         splits = list(skf.split(indices, labels))
         train_idx, val_idx = splits[fold]
+        if submission:
+            train_idx = np.concatenate((train_idx, val_idx))
+            val_idx = [0]  # Dummy index for submission
 
         if set_name == "train":
             clips = clips.iloc[train_idx]
