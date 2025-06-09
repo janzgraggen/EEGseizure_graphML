@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-05-26 by roduit -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train the model-*-
 
@@ -13,8 +13,7 @@ from torch.optim import Optimizer
 
 
 def get_criterion(criterion_name: str) -> torch.nn.Module:
-    """
-    Get the criterion based on the name provided.
+    """Get the criterion based on the name provided.
 
     Args:
         criterion_name (str): The name of the criterion.
@@ -26,7 +25,7 @@ def get_criterion(criterion_name: str) -> torch.nn.Module:
         return torch.nn.BCEWithLogitsLoss()
     elif criterion_name == "CrossEntropyLoss":
         return torch.nn.CrossEntropyLoss()
-    elif criterion_name=="MSELoss":
+    elif criterion_name == "MSELoss":
         return torch.nn.MSELoss()
     else:
         raise ValueError(f"Criterion {criterion_name} not recognized.")
@@ -49,6 +48,8 @@ def get_optimizer(
     if optimizer_name == "Adam":
         return torch.optim.Adam(parameters, lr=learning_rate, weight_decay=1e-5)
     elif optimizer_name == "SGD":
-        return torch.optim.SGD(parameters, lr=learning_rate, momentum=0.9, weight_decay=1e-5)
+        return torch.optim.SGD(
+            parameters, lr=learning_rate, momentum=0.9, weight_decay=1e-5
+        )
     else:
         raise ValueError(f"Optimizer {optimizer_name} not recognized.")

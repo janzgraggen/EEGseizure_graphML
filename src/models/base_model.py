@@ -21,7 +21,12 @@ import constants
 from train import *
 from plots import plot_cm_matrix
 
+
 class BaseModel(torch.nn.Module):
+    """Base class that implements the necessary functions for training and
+    evaluating a model. This class is used for traditional models with no graphs
+    """
+
     def __init__(
         self,
         device=constants.DEVICE,
@@ -47,6 +52,18 @@ class BaseModel(torch.nn.Module):
         fold=0,
         submission=False,
     ):
+        """Function used to train the model
+        Args:
+            loader_tr (torch.utils.data.DataLoader): DataLoader for training data.
+            loader_val (torch.utils.data.DataLoader): DataLoader for validation data.
+            num_epochs (int): Number of epochs to train the model.
+            learning_rate (float): Learning rate for the optimizer.
+            criterion_name (str): Name of the loss function to use.
+            optimizer_name (str): Name of the optimizer to use.
+            use_scheduler (bool): Whether to use a learning rate scheduler.
+            fold (int): Current fold number for logging purposes.
+            submission (bool): If True, skip validation and only log training metrics.
+        """
         self.train_losses = []
         self.val_losses = []
 
@@ -58,10 +75,8 @@ class BaseModel(torch.nn.Module):
 
         if self.use_scheduler:
             self.scheduler = torch.optim.lr_scheduler.StepLR(
-                                self.optimizer,
-                                step_size=10, 
-                                gamma=0.5     
-                            )
+                self.optimizer, step_size=10, gamma=0.5
+            )
 
         pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
         for e in range(num_epochs):
@@ -94,16 +109,27 @@ class BaseModel(torch.nn.Module):
                     )
                 mlflow.log_metric(f"val_f1_score_{fold}", val_f1_score, step=e + 1)
                 mlflow.log_metric(f"val_accuracy_{fold}", val_accuracy, step=e + 1)
-                mlflow.log_metric(f"val_loss_{fold}", val_loss, step=e + 1)  
-                pbar.set_postfix({"\ntrain_loss": train_loss, "val_loss": val_loss,
-                "\ntrain_f1_score": train_f1_score, "val_f1_score": val_f1_score,
-                "\ntrain_accuracy": train_accuracy, "val_accuracy": val_accuracy})
+                mlflow.log_metric(f"val_loss_{fold}", val_loss, step=e + 1)
+                pbar.set_postfix(
+                    {
+                        "\ntrain_loss": train_loss,
+                        "val_loss": val_loss,
+                        "\ntrain_f1_score": train_f1_score,
+                        "val_f1_score": val_f1_score,
+                        "\ntrain_accuracy": train_accuracy,
+                        "val_accuracy": val_accuracy,
+                    }
+                )
                 pbar.update(1)
             else:
-                pbar.set_postfix({"\ntrain_loss": train_loss,
-                "\ntrain_f1_score": train_f1_score,
-                "\ntrain_accuracy": train_accuracy})
-                pbar.update(1) 
+                pbar.set_postfix(
+                    {
+                        "\ntrain_loss": train_loss,
+                        "\ntrain_f1_score": train_f1_score,
+                        "\ntrain_accuracy": train_accuracy,
+                    }
+                )
+                pbar.update(1)
 
             if self.use_scheduler:
                 self.scheduler.step()
@@ -161,9 +187,9 @@ class BaseModel(torch.nn.Module):
             all_predictions,
             all_targets,
             average="macro",
-            num_classes=constants.NUM_CLASSES
+            num_classes=constants.NUM_CLASSES,
         )
-        
+
         # Compute confusion matrix
         cm = confusion_matrix(
             all_targets.cpu(),
@@ -173,7 +199,13 @@ class BaseModel(torch.nn.Module):
         return accuracy, float(f1), cm
 
     def _epoch(self, loader, train=True):
-
+        """Run one epoch of training or validation.
+        Args:
+            loader (torch.utils.data.DataLoader): DataLoader for the dataset.
+            train (bool): If True, run in training mode; otherwise, run in evaluation mode.
+        Returns:
+            float: Average loss for the epoch.
+        """
         if train:
             self.train()
         else:
@@ -189,7 +221,7 @@ class BaseModel(torch.nn.Module):
             # Forward pass
             logits = self(x_batch)
             loss = self.criterion(logits, y_batch)
-            
+
             if train:
                 # Backward pass
                 self.optimizer.zero_grad()
@@ -205,6 +237,13 @@ class BaseModel(torch.nn.Module):
     def create_submission(
         self, loader: DataLoader, path: str = constants.SUBMISSION_FILE
     ):
+        """Create a submission file from the predictions of the model.
+        Args:
+            loader (torch.utils.data.DataLoader): DataLoader for the test dataset.
+            path (str): Path to save the submission file.
+        Returns:
+            pd.DataFrame: DataFrame containing the submission data.
+        """
         self.eval()
         # Lists to store sample IDs and predictions
         all_predictions = []

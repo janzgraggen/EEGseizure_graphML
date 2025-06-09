@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-06-01 by roduit -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
@@ -15,27 +15,48 @@ import torch.nn.functional as F
 from models.graph_base import GraphBase
 import constants
 
+
 class GAT(GraphBase):
+    """Graph Attention Network (GAT) model.
+
+    Args:
+        GraphBase (Graphase): Base class for graph neural networks.
+    """
+
     def __init__(self, in_channels: int, hidden_channels: int, heads=4):
         super().__init__()
         self.device = constants.DEVICE
-        self.conv1 =  nngc.GATConv(in_channels, hidden_channels, heads=heads)
-        self.conv2 =  nngc.GATConv(hidden_channels * heads, hidden_channels)
-        self.lin =    nn.Linear(hidden_channels, 1)
+        self.conv1 = nngc.GATConv(in_channels, hidden_channels, heads=heads)
+        self.conv2 = nngc.GATConv(hidden_channels * heads, hidden_channels)
+        self.lin = nn.Linear(hidden_channels, 1)
 
         self.to(self.device)
 
     def forward(self, data):
+        """Forward pass of the GAT model.
+        Args:
+            data (torch_geometric.data.Data): Input data containing node features,
+                                                edge indices, and batch information.
+        Returns:
+            torch.Tensor: Output logits for binary classification.
+        """
         x, edge_index, batch = data.x, data.edge_index, data.batch
         x = self.conv1(x, edge_index).relu()
         x = self.conv2(x, edge_index).relu()
-        x =  nngc.global_mean_pool(x, batch)
+        x = nngc.global_mean_pool(x, batch)
         return self.lin(x)
+
     @staticmethod
     def from_config(model_cfg):
         return GAT(**model_cfg)
 
+
 class GCN(GraphBase):
+    """Graph Convolutional Network (GCN) model.
+    Args:
+        GraphBase (GraphBase): Base class for graph neural networks.
+    """
+
     def __init__(self, in_channels: int, hidden_channels: int):
         super().__init__()
         self.device = constants.DEVICE
@@ -54,6 +75,7 @@ class GCN(GraphBase):
         self.to(self.device)
 
     def _init_weights(self):
+        """Initialize weights for the model."""
         nn.init.xavier_uniform_(self.lin.weight)
         if self.lin.bias is not None:
             nn.init.zeros_(self.lin.bias)
@@ -64,6 +86,13 @@ class GCN(GraphBase):
                 nn.init.zeros_(conv.lin.bias)
 
     def forward(self, data):
+        """Forward pass of the GCN model.
+        Args:
+            data (torch_geometric.data.Data): Input data containing node features,
+                                                edge indices, and batch information.
+        Returns:
+            torch.Tensor: Output logits for binary classification.
+        """
         x, edge_index, batch = data.x, data.edge_index, data.batch
 
         x = self.conv1(x, edge_index)
@@ -87,6 +116,14 @@ class GCN(GraphBase):
 
 
 class LSTMGNN(GraphBase):
+    """Graph Neural Network with LSTM layers for temporal graph data.
+    Args:
+        GraphBase (GraphBase): Base class for graph neural networks.
+        in_channels (int): Number of input features per node.
+        hidden_channels_gcn (int): Number of hidden channels for GCN layers.
+        hidden_channels_lstm (int): Number of hidden channels for LSTM layer.
+    """
+
     def __init__(self, in_channels, hidden_channels_gcn, hidden_channels_lstm):
         super().__init__()
         self.device = constants.DEVICE
@@ -96,39 +133,47 @@ class LSTMGNN(GraphBase):
             input_size=hidden_channels_gcn,
             hidden_size=hidden_channels_lstm,
             num_layers=1,
-            batch_first=False
+            batch_first=False,
         )
         self.fc = nn.Linear(hidden_channels_lstm, 1)
 
         self.to(self.device)
 
-        
     def forward(self, data):
+        """Forward pass of the LSTMGNN model.
+        Args:
+            data (torch_geometric.data.Data): Input data containing node features,
+                                                edge indices, and batch information.
+        Returns:
+            torch.Tensor: Output logits for binary classification.
+        """
         x, edge_index, batch = data.x, data.edge_index, data.batch
-        
+
         # First GCN layer with ReLU activation
         x1 = self.gcn1(x, edge_index)
         x1 = F.relu(x1)
-        
+
         # Second GCN layer with ReLU activation
         x2 = self.gcn2(x1, edge_index)
         x2 = F.relu(x2)
-        
+
         # Stack outputs to form a sequence of two time steps
         sequence = torch.stack([x1, x2], dim=0)  # Shape: [2, num_nodes, hidden_dim_gcn]
-        
+
         # Process the sequence through LSTM
         lstm_out, _ = self.lstm(sequence)  # Shape: [2, num_nodes, hidden_dim_lstm]
-        
+
         # Extract the last time step output for each node
         node_embeddings = lstm_out[-1]  # Shape: [num_nodes, hidden_dim_lstm]
-        
+
         # Aggregate node embeddings to graph-level via mean pooling
-        graph_embeddings = nngc.global_mean_pool(node_embeddings, batch)  # Shape: [batch_size, hidden_dim_lstm]
-        
+        graph_embeddings = nngc.global_mean_pool(
+            node_embeddings, batch
+        )  # Shape: [batch_size, hidden_dim_lstm]
+
         # Final linear layer for binary classification logits
         logits = self.fc(graph_embeddings)  # Shape: [batch_size, 1]
-        
+
         return logits
 
     @staticmethod
@@ -137,6 +182,14 @@ class LSTMGNN(GraphBase):
 
 
 class LSTMGAT(GraphBase):
+    """Graph Neural Network with GAT layers followed by LSTM for temporal graph data.
+    Args:
+        GraphBase (GraphBase): Base class for graph neural networks.
+        in_channels (int): Number of input features per node.
+        hidden_channels_gat (int): Number of hidden channels for GAT layers.
+        hidden_channels_lstm (int): Number of hidden channels for LSTM layer.
+    """
+
     def __init__(self, in_channels, hidden_channels_gat, hidden_channels_lstm):
         super().__init__()
         self.device = constants.DEVICE
@@ -145,28 +198,28 @@ class LSTMGAT(GraphBase):
             in_channels=in_channels,
             out_channels=hidden_channels_gat,
             heads=8,  # Multi-head attention
-            concat=False  # Average heads instead of concatenating
+            concat=False,  # Average heads instead of concatenating
         )
         # Second GAT layer
         self.gat2 = nngc.GATConv(
             in_channels=hidden_channels_gat,
             out_channels=hidden_channels_gat,
             heads=8,
-            concat=False
+            concat=False,
         )
 
         self.gat3 = nngc.GATConv(
             in_channels=hidden_channels_gat,
             out_channels=hidden_channels_gat,
             heads=8,
-            concat=False
+            concat=False,
         )
         # LSTM to process sequence of GAT outputs
         self.lstm = nn.LSTM(
             input_size=hidden_channels_gat,
             hidden_size=hidden_channels_lstm,
             num_layers=1,
-            batch_first=False
+            batch_first=False,
         )
         # Final classifier
         self.fc = nn.Linear(hidden_channels_lstm, 1)
@@ -174,34 +227,43 @@ class LSTMGAT(GraphBase):
         self.to(self.device)
 
     def forward(self, data):
+        """Forward pass of the LSTMGAT model.
+        Args:
+            data (torch_geometric.data.Data): Input data containing node features,
+                                                edge indices, and batch information.
+        Returns:
+            torch.Tensor: Output logits for binary classification.
+        """
         x, edge_index, batch = data.x, data.edge_index, data.batch
-        
+
         # First GAT layer with ELU activation
         x1 = self.gat1(x, edge_index)
         x1 = F.elu(x1)
-        
+
         # Second GAT layer with ELU activation
         x2 = self.gat2(x1, edge_index)
         x2 = F.elu(x2)
 
         x3 = self.gat3(x2, edge_index)
         x3 = F.elu(x3)
-        
+
         # Stack GAT outputs as sequence (2 timesteps)
-        sequence = torch.stack([x1, x2, x3], dim=0)  # Shape: [2, num_nodes, hidden_dim_gat]
-        
+        sequence = torch.stack(
+            [x1, x2, x3], dim=0
+        )  # Shape: [2, num_nodes, hidden_dim_gat]
+
         # Process sequence with LSTM
         lstm_out, _ = self.lstm(sequence)  # Shape: [2, num_nodes, hidden_dim_lstm]
-        
+
         # Take last timestep output
         node_embeddings = lstm_out[-1]  # Shape: [num_nodes, hidden_dim_lstm]
-        
+
         # Global mean pooling for graph-level embedding
         graph_embeddings = nngc.global_mean_pool(node_embeddings, batch)
-        
+
         # Final binary classification
         logits = self.fc(graph_embeddings)
-        
+
         return logits
 
     @staticmethod
@@ -209,19 +271,30 @@ class LSTMGAT(GraphBase):
         return LSTMGAT(**model_cfg)
 
 
+class EccGatGNN(GraphBase):
+    """Daniele Grattarola, et Al Seizure local-isation with attention-based graph
+    neural networks.
+    Expert Systems with Applications, 203:117330, 2022. DOI: 10.1016/j.eswa.2022.117330.
+    Args:
+        GraphBase (GraphBase): Base class for graph neural networks.
+        in_channels (int): Number of input features per node.
+        hidden_channels (int): Number of hidden channels for GAT layers.
+        edge_attr_dim (int): Dimension of edge attributes.
+    """
 
-class EccGatGNN(GraphBase): # Daniele Grattarola, et Al Seizure local-isation with attention-based graph neural networks. Expert Systems with Applications, 203:117330, 2022. DOI: 10.1016/j.eswa.2022.117330.
     def __init__(self, in_channels, hidden_channels, edge_attr_dim):
         super().__init__()
         self.device = constants.DEVICE
 
         # ECC Layer (Edge-conditioned convolution)
         self.ecc = nngc.conv.ECConv(
-            nn=nn.Sequential(nn.Linear(edge_attr_dim, 32),
-                          nn.ReLU(),
-                          nn.Linear(32, in_channels * hidden_channels)),
+            nn=nn.Sequential(
+                nn.Linear(edge_attr_dim, 32),
+                nn.ReLU(),
+                nn.Linear(32, in_channels * hidden_channels),
+            ),
             in_channels=in_channels,
-            out_channels=hidden_channels
+            out_channels=hidden_channels,
         )
 
         # GAT Layer
@@ -232,12 +305,24 @@ class EccGatGNN(GraphBase): # Daniele Grattarola, et Al Seizure local-isation wi
 
         self.to(self.device)
 
-
-
-
     def forward(self, data):
+        """Forward pass of the EccGatGNN model.
+
+        Args:
+            data (torch_geometric.data.Data): Input data containing node features,
+                                                edge indices, edge attributes,
+                                                and batch information.
+
+        Returns:
+            torch.Tensor: Output logits for binary classification.
+        """
         # ECCConv: node features and edge attributes
-        x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr , data.batch
+        x, edge_index, edge_attr, batch = (
+            data.x,
+            data.edge_index,
+            data.edge_attr,
+            data.batch,
+        )
 
         x = self.ecc(x, edge_index, edge_attr.float().unsqueeze(1))
         x = F.relu(x)

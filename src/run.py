@@ -20,6 +20,7 @@ from logs import log_cfg, log_model_summary
 from dataloader import parse_datasets
 import constants
 
+
 def main(args: argparse.Namespace):
     cfg_file = args.cfg
     seed = args.seed
@@ -46,14 +47,13 @@ def main(args: argparse.Namespace):
     run_name = "{}:{}:{}".format(experiment, name, seed)
     with mlflow.start_run(run_name=run_name):
         loader_train, loader_val, loader_test = parse_datasets(
-                datasets=datasets_cfg,
-                config=config_dataset
-            )
+            datasets=datasets_cfg, config=config_dataset
+        )
         for fold in range(n_splits):
             run_id = mlflow.active_run().info.run_id
             model = choose_model(cfg=model_cfg)
             log_cfg(cfg=model_cfg)
-            
+
             if fold == 0:
                 print(f"\n========== Model Summary ==========")
                 log_model_summary(model=model)
@@ -64,14 +64,16 @@ def main(args: argparse.Namespace):
                 loader_train[fold],
                 loader_val[fold],
                 num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
-                learning_rate=float(model_cfg.get("learning_rate", constants.LEARNING_RATE)),
+                learning_rate=float(
+                    model_cfg.get("learning_rate", constants.LEARNING_RATE)
+                ),
                 criterion_name=model_cfg.get("criterion", constants.CRITERION),
                 optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
                 fold=fold,
             )
 
-            tr_acc, tr_f1,_ =   model.predict(loader=loader_train[fold])
-            val_acc, val_f1,_ = model.predict(loader=loader_val[fold])
+            tr_acc, tr_f1, _ = model.predict(loader=loader_train[fold])
+            val_acc, val_f1, _ = model.predict(loader=loader_val[fold])
             fold_metrics["train_accuracy"].append(tr_acc)
             fold_metrics["train_f1_score"].append(tr_f1)
             fold_metrics["val_accuracy"].append(val_acc)
@@ -84,41 +86,43 @@ def main(args: argparse.Namespace):
             mlflow.log_metric(metric, mean_value)
             mlflow.log_metric(f"{metric}_std", std_value)
             if metric.startswith("val_"):
-                print(f"\033[1m\033[31m{metric}\033[0m: {mean_value:.2f} ± {std_value:.2f}")
+                print(
+                    f"\033[1m\033[31m{metric}\033[0m: {mean_value:.2f} ± {std_value:.2f}"
+                )
             else:
                 print(f"{metric}: {mean_value:.2f} ± {std_value:.2f}")
-                    
+
         print(f"\n========== Train on all  ==========")
         log_cfg(cfg=model_cfg)
         loader_train, loader_val, loader_test = parse_datasets(
-                datasets=datasets_cfg,
-                config=config_dataset,
-                submission=True
-            )
-            
+            datasets=datasets_cfg, config=config_dataset, submission=True
+        )
+
         model.fit(
-                loader_train,
-                None,
-                num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
-                learning_rate=float(model_cfg.get("learning_rate", constants.LEARNING_RATE)),
-                criterion_name=model_cfg.get("criterion", constants.CRITERION),
-                optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
-                submission=True,
-                fold='all'
-            )
+            loader_train,
+            None,
+            num_epochs=model_cfg.get("n_epochs", constants.NUM_EPOCHS),
+            learning_rate=float(
+                model_cfg.get("learning_rate", constants.LEARNING_RATE)
+            ),
+            criterion_name=model_cfg.get("criterion", constants.CRITERION),
+            optimizer_name=model_cfg.get("optimizer", constants.OPTIMIZER),
+            submission=True,
+            fold="all",
+        )
 
         print(f"\n========== Create Submission ==========")
         model.create_submission(
             loader=loader_test,
-            path=os.path.join(constants.SUBMISSION_DIR, f"{run_id}_all.csv")
+            path=os.path.join(constants.SUBMISSION_DIR, f"{run_id}_all.csv"),
         )
+
 
 if __name__ == "__main__":
 
     # Use argument
     parser = argparse.ArgumentParser(description="Run model computation")
-    parser.add_argument("--cfg", type=str, default="fcn/fcn_clean.yml"
-    )
+    parser.add_argument("--cfg", type=str, default="fcn/fcn_clean.yml")
     parser.add_argument("--seed", type=int, default=1)
 
     args = parser.parse_args()

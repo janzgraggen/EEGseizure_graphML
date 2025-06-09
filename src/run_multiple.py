@@ -8,19 +8,14 @@
 import subprocess
 import os
 
-config_folder = 'project/config/exp/fcn'
+config_folder = "project/config/exp/cnn"
 
 config_files = os.listdir(config_folder)
 # Filter out non-configuration files if necessary
-config_files = [f for f in config_files if f.endswith('.yml')]
-config_files = [os.path.join(config_folder.split('/')[-1], f) for f in config_files]
+config_files = [f for f in config_files if f.endswith(".yml")]
+config_files = [os.path.join(config_folder.split("/")[-1], f) for f in config_files]
 
-config_files = ['fcn/fcn_fft.yml']
-    
 # Loop through each config file and run the command
 for config in config_files:
     print(f"Running with config: {config}")
-    subprocess.run([
-        "python", 
-        "project/src/run.py", 
-        "--cfg", config])
+    subprocess.run(["python", "project/src/run.py", "--cfg", config])

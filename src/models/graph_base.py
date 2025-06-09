@@ -6,8 +6,6 @@
 # -*- Description: Functions to train models-*-
 
 # Import libraries
-#import torch
-import torch_geometric
 from tqdm import tqdm
 import pandas as pd
 import mlflow
@@ -23,88 +21,104 @@ import constants
 from train import *
 from plots import plot_cm_matrix
 
+
 class GraphBase(torch.nn.Module):
-    """
-    Base class providing training loop, evaluation, and submission.
+    """Base class providing training loop, evaluation, and submission. This class
+    should be subclassed to implement specific graph neural network architectures.
     """
 
     def forward(self, x):
-        """ Implement in subclass """
+        """Implement in subclass"""
         raise NotImplementedError(...)
 
     def fit(
-            self,
-            loader_tr,
-            loader_val,
-            num_epochs=constants.NUM_EPOCHS,
-            learning_rate=constants.LEARNING_RATE,
-            criterion_name=constants.CRITERION,
-            optimizer_name=constants.OPTIMIZER,
-            submission=False,
-        ):
-            self.train_losses = []
-            if not submission: self.val_losses = []
+        self,
+        loader_tr,
+        loader_val,
+        num_epochs=constants.NUM_EPOCHS,
+        learning_rate=constants.LEARNING_RATE,
+        criterion_name=constants.CRITERION,
+        optimizer_name=constants.OPTIMIZER,
+        submission=False,
+    ):
+        """Train the model using the provided DataLoaders for training and validation.
 
-            self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
-            self.criterion = get_criterion(criterion_name)
+        Args:
+            loader_tr (DataLoader): DataLoader for training data.
+            loader_val (DataLoader): DataLoader for validation data.
+            num_epochs (int): Number of epochs to train.
+            learning_rate (float): Learning rate for the optimizer.
+            criterion_name (str): Name of the loss function to use.
+            optimizer_name (str): Name of the optimizer to use.
+            submission (bool): If True, skip validation and only train.
+        """
+        self.train_losses = []
+        if not submission:
+            self.val_losses = []
 
-            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer,
-                T_max=num_epochs,
-                eta_min=0.00001,
-            )
-            self.to(self.device)
+        self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
+        self.criterion = get_criterion(criterion_name)
 
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer,
+            T_max=num_epochs,
+            eta_min=0.00001,
+        )
+        self.to(self.device)
 
-            pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
-            for e in range(num_epochs):
-                # Training
-                train_loss = self._epoch(loader_tr, train=True)
-                self.train_losses.append(train_loss)
-                train_accuracy, train_f1_score, cm_train = self.predict(loader_tr)
+        pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
+        for e in range(num_epochs):
+            # Training
+            train_loss = self._epoch(loader_tr, train=True)
+            self.train_losses.append(train_loss)
+            train_accuracy, train_f1_score, cm_train = self.predict(loader_tr)
 
-                mlflow.log_metric("train_f1_score", train_f1_score, step=e + 1)
-                mlflow.log_metric("train_accuracy", train_accuracy, step=e + 1)
-                mlflow.log_metric("train_loss", train_loss, step=e + 1)
+            mlflow.log_metric("train_f1_score", train_f1_score, step=e + 1)
+            mlflow.log_metric("train_accuracy", train_accuracy, step=e + 1)
+            mlflow.log_metric("train_loss", train_loss, step=e + 1)
 
-                if not submission:
-                    # Validation
-                    val_loss = self._epoch(loader_val, train=False)
-                    self.val_losses.append(val_loss)
-                    val_accuracy, val_f1_score, cm_val = self.predict(loader_val)
+            if not submission:
+                # Validation
+                val_loss = self._epoch(loader_val, train=False)
+                self.val_losses.append(val_loss)
+                val_accuracy, val_f1_score, cm_val = self.predict(loader_val)
 
-                    with tempfile.TemporaryDirectory() as tmp_dir:
-                        os.makedirs(tmp_dir, exist_ok=True)
-                        plot_cm_matrix(
-                            cm_train,
-                            set="train",
-                            file_pth=tmp_dir,
-                            epoch=e + 1,
-                        )
-                        plot_cm_matrix(
-                            cm_val,
-                            set="val",
-                            file_pth=tmp_dir,
-                            epoch=e + 1,
-                        )
-                    
-                    mlflow.log_metric("val_f1_score", val_f1_score, step=e + 1)
-                    mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
-                    mlflow.log_metric("val_loss", val_loss, step=e + 1)
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    os.makedirs(tmp_dir, exist_ok=True)
+                    plot_cm_matrix(
+                        cm_train,
+                        set="train",
+                        file_pth=tmp_dir,
+                        epoch=e + 1,
+                    )
+                    plot_cm_matrix(
+                        cm_val,
+                        set="val",
+                        file_pth=tmp_dir,
+                        epoch=e + 1,
+                    )
 
-                    pbar.set_postfix({
+                mlflow.log_metric("val_f1_score", val_f1_score, step=e + 1)
+                mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
+                mlflow.log_metric("val_loss", val_loss, step=e + 1)
+
+                pbar.set_postfix(
+                    {
                         "F1 (train)": train_f1_score,
                         f"\033[1m\033[31mF1 (VAL)\033[0m": val_f1_score,
-                    })
-                else:
-                    pbar.set_postfix({
+                    }
+                )
+            else:
+                pbar.set_postfix(
+                    {
                         "F1 (train)": train_f1_score,
-                    })
-                pbar.update(1)
+                    }
+                )
+            pbar.update(1)
 
     def predict_batch(self, batch):
-        """
-        Make predictions on a PyG batch.
+        """Make predictions on a PyG batch.
+
         Args:
             batch (torch_geometric.data.Batch): A batch of graphs.
         Returns:
@@ -114,13 +128,13 @@ class GraphBase(torch.nn.Module):
         batch = batch.to(self.device)
 
         with torch.no_grad():
-            logits = self(batch)  # shape: [batch_size, 1]
+            logits = self(batch)
             predictions = (logits > 0).int()  # binary threshold
         return predictions.view(-1)
-    
+
     def predict(self, loader):
-        """
-        Predict on an entire dataset of graphs.
+        """Predict on an entire dataset of graphs.
+
         Args:
             loader (torch_geometric.data.DataLoader): Graph DataLoader.
         Returns:
@@ -148,20 +162,25 @@ class GraphBase(torch.nn.Module):
 
         # Compute F1 score
         f1 = multiclass_f1_score(
-            all_predictions,
-            all_targets,
-            average="macro",
-            num_classes=2
+            all_predictions, all_targets, average="macro", num_classes=2
         )
 
         cm = confusion_matrix(
             all_targets.cpu(),
             all_predictions.cpu(),
-            
         )
         return accuracy, float(f1), cm
 
     def _epoch(self, loader, train=True):
+        """Run a single epoch of training or validation.
+
+        Args:
+            loader (DataLoader): DataLoader for the current epoch.
+            train (bool): If True, run in training mode; otherwise, validation mode.
+
+        Returns:
+            float: Average loss for the epoch.
+        """
         if train:
             self.train()
         else:
@@ -170,7 +189,7 @@ class GraphBase(torch.nn.Module):
         for batch in loader:
             batch = batch.to(self.device)
             out = self(batch)  # expects batch to be PyG Batch object
-            y = batch.y.view(-1,1).float()
+            y = batch.y.view(-1, 1).float()
 
             loss = self.criterion(out, y)
 
@@ -183,10 +202,20 @@ class GraphBase(torch.nn.Module):
 
         return running_loss / len(loader)
 
-
     def create_submission(
         self, loader: DataLoader, path: str = constants.SUBMISSION_FILE
     ):
+        """Function to create a submission file from the predictions of the model.
+
+        Args:
+            loader (DataLoader): DataLoader for the test dataset.
+            path (str, optional): Path to save the submission file.
+                                    Defaults to constants.SUBMISSION_FILE.
+
+        Returns:
+            pd.DataFrame: DataFrame containing the submission data with
+                        columns 'id' and 'label'.
+        """
         self.eval()
         # Lists to store sample IDs and predictions
         all_predictions = []
