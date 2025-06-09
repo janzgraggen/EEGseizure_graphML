@@ -140,18 +140,11 @@ def load_data(dataset_cfg: dict, config: dict, submission: bool = False) -> list
         )
 
         # Remove zero-value samples
-        if tfm_name == "fusion":
-            valid_indices = [
-                i
-                for i in range(len(dataset))
-                if not is_mostly_zero_record(dataset[i][0].fft)
-            ]
-        else:
-            valid_indices = [
-                i
-                for i in range(len(dataset))
-                if not is_mostly_zero_record(dataset[i][0])
-            ]
+        valid_indices = [
+            i
+            for i in range(len(dataset))
+            if not is_mostly_zero_record(dataset[i][0])
+        ]
 
         dataset = torch.utils.data.Subset(dataset, valid_indices)
         sampler = None
