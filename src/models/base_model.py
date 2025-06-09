@@ -110,26 +110,20 @@ class BaseModel(torch.nn.Module):
                 mlflow.log_metric(f"val_f1_score_{fold}", val_f1_score, step=e + 1)
                 mlflow.log_metric(f"val_accuracy_{fold}", val_accuracy, step=e + 1)
                 mlflow.log_metric(f"val_loss_{fold}", val_loss, step=e + 1)
+                
                 pbar.set_postfix(
                     {
-                        "\ntrain_loss": train_loss,
-                        "val_loss": val_loss,
-                        "\ntrain_f1_score": train_f1_score,
-                        "val_f1_score": val_f1_score,
-                        "\ntrain_accuracy": train_accuracy,
-                        "val_accuracy": val_accuracy,
+                        "F1 (train)": train_f1_score,
+                        f"\033[1m\033[31mF1 (VAL)\033[0m": val_f1_score,
                     }
                 )
-                pbar.update(1)
             else:
                 pbar.set_postfix(
                     {
-                        "\ntrain_loss": train_loss,
-                        "\ntrain_f1_score": train_f1_score,
-                        "\ntrain_accuracy": train_accuracy,
+                        "F1 (train)": train_f1_score,
                     }
                 )
-                pbar.update(1)
+            pbar.update(1)
 
             if self.use_scheduler:
                 self.scheduler.step()
