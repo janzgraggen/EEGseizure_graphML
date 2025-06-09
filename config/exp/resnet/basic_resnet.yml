@@ -5,7 +5,7 @@ description: "Basic ResNet model for signal classification"
 task: "v1"
 
 config_dataset:
-  val_size: 0.2
+  n_splits: 5
   tfm: "fft"
   num_workers: 4
   batch_size: 32
@@ -13,19 +13,22 @@ config_dataset:
 datasets:
 -
   set: "train"
-  path: "/home/ogut/data/train"
+  # path: "/home/ogut/data/train"
+  path: "project/data/train"
   sampling: True
   size: 1
   shuffle: True
 
 -
   set: "val"
-  path: "/home/ogut/data/train"
+  # path: "/home/ogut/data/train"
+  path: "project/data/train"
   shuffle: False
 
 -
   set: "test"
-  path: "/home/ogut/data/test"
+  # path: "/home/ogut/data/test"
+  path: "project/data/test"
   shuffle: False
 
 # Model

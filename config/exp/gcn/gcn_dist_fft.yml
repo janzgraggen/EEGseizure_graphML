@@ -2,14 +2,15 @@
 experiment: "gnn"
 name: "gcn_dist_fft"
 description: "Two-layer GCN for seizure prediction with distance graph in frequency domain."
-task: "v1"
+task: "threshold_08"
 # Data (same splits as before)
 config_dataset:
-  val_size: 0.2
+  n_splits: 5
   tfm: "fft"
   graph: 
       type: "distance"
       path: "./project/data/distances_3d.csv"
+      # path: "$HOME/EE452-Network-Machine-Learning/project/data/distances_3d.csv"
       edge_threshold: 0.5
   num_workers: 4
   batch_size: 32
@@ -18,6 +19,7 @@ datasets:
 -
   set: "train"
   path: "project/data/train"
+  # path: "/home/ogut/data/train"
   sampling: True
   size: 1
   shuffle: True
@@ -25,11 +27,13 @@ datasets:
 -
   set: "val"
   path: "project/data/train"
+  # path: "/home/ogut/data/train"
   shuffle: False
 
 -
   set: "test"
   path: "project/data/test"
+  # path: "/home/ogut/data/train"
   shuffle: False
 
 # Model
@@ -38,7 +42,7 @@ model:
   n_epochs: 50
   optimizer: "Adam"
   use_scheduler: False
-  learning_rate: 0.001
+  learning_rate: 2e-4
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)

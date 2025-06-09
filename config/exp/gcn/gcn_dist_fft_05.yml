@@ -1,12 +1,12 @@
 # project/config/exp/graph/basic_gcn.yml
 experiment: "gnn"
-name: "gcn_dist_time"
-description: "Two-layer GCN for seizure prediction with distance graph in time domain."
-task: "threshold_08"
+name: "gcn_dist_fft"
+description: "Two-layer GCN for seizure prediction with distance graph in frequency domain."
+task: "threshold_05"
 # Data (same splits as before)
 config_dataset:
   n_splits: 5
-  tfm: "clean"
+  tfm: "fft"
   graph: 
       type: "distance"
       path: "./project/data/distances_3d.csv"
@@ -19,6 +19,7 @@ datasets:
 -
   set: "train"
   path: "project/data/train"
+  # path: "/home/ogut/data/train"
   sampling: True
   size: 1
   shuffle: True
@@ -26,11 +27,13 @@ datasets:
 -
   set: "val"
   path: "project/data/train"
+  # path: "/home/ogut/data/train"
   shuffle: False
 
 -
   set: "test"
   path: "project/data/test"
+  # path: "/home/ogut/data/train"
   shuffle: False
 
 # Model
@@ -43,6 +46,6 @@ model:
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)
-      3000
+      354 
     hidden_channels: 64
     # edge_index will be passed in code (fixed electrode graph)

@@ -2,7 +2,7 @@
 experiment: "gnn"
 name: "gcn_coherence_band_energies"
 description: "Two-layer GCN for seizure prediction, using correlation graph."
-task: "seizure_prediction"
+task: "threshold_08"
 
 # Data (same splits as before)
 config_dataset:
@@ -12,7 +12,7 @@ config_dataset:
       type: "coherence_band_energies"
       edge_threshold: 0.8
   num_workers: 4
-  batch_size: 64
+  batch_size: 32
 
 datasets:
 -

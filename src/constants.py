@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.9.14 -*-
 # -*- Description: Constants used in the project -*-
 
@@ -43,6 +43,8 @@ DEVICE = torch.device(
     if torch.cuda.is_available()
     else "mps" if torch.mps.is_available() else "cpu"
 )
+
+NUM_CLASSES = 2
 
 NUM_EPOCHS = 10
 BATCH_SIZE = 32

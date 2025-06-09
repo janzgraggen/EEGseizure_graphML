@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.11.11 -*-
 # -*- Description: Functions to train models-*-
 
@@ -10,11 +10,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from tqdm import tqdm
-import pandas as pd
-import mlflow
-from torcheval.metrics.functional import multiclass_f1_score
-from torch.utils.data import DataLoader
 
 # import files
 import constants
@@ -38,8 +33,9 @@ class ResNet(BaseModel):
         The number of output classes
     """
 
-    def __init__(self, input_shape: int, mid_channels: int = 64,
-                 output_shape: int = 1) -> None:
+    def __init__(
+        self, input_shape: int, mid_channels: int = 64, output_shape: int = 1
+    ) -> None:
         super().__init__()
 
         self.device = constants.DEVICE
@@ -48,14 +44,22 @@ class ResNet(BaseModel):
 
         n_feature_maps = mid_channels
 
-        self.block1 = ResidualBlock(self.input_shape, n_feature_maps, expand_channels=True)
-        self.block2 = ResidualBlock(n_feature_maps, n_feature_maps * 2, expand_channels=True)
-        self.block3 = ResidualBlock(n_feature_maps * 2, n_feature_maps * 2, expand_channels=False)
+        self.block1 = ResidualBlock(
+            self.input_shape, n_feature_maps, expand_channels=True
+        )
+        self.block2 = ResidualBlock(
+            n_feature_maps, n_feature_maps * 2, expand_channels=True
+        )
+        self.block3 = ResidualBlock(
+            n_feature_maps * 2, n_feature_maps * 2, expand_channels=False
+        )
 
-        self.global_avg_pool = nn.AdaptiveAvgPool1d(1)  # replaces GlobalAveragePooling1D
+        self.global_avg_pool = nn.AdaptiveAvgPool1d(
+            1
+        )  # replaces GlobalAveragePooling1D
         self.fc = nn.Linear(n_feature_maps * 2, self.output_shape)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # type: ignore
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
 
         out = self.block1(x)
         out = self.block2(out)
@@ -64,10 +68,9 @@ class ResNet(BaseModel):
         out = out.squeeze(-1)  # remove last dim (B, C, 1) → (B, C)
         out = self.fc(out)
         return out
-    
 
     @staticmethod
-    def from_config(model_cfg):
+    def from_config(model_cfg: dict):
         """Create a model from a configuration dictionary.
 
         Args:
@@ -95,12 +98,19 @@ class ResidualBlock(nn.Module):
         if expand_channels:
             self.shortcut = nn.Sequential(
                 nn.Conv1d(in_channels, out_channels, kernel_size=1, padding=0),
-                nn.BatchNorm1d(out_channels)
+                nn.BatchNorm1d(out_channels),
             )
         else:
             self.shortcut = nn.BatchNorm1d(out_channels)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass of the residual block.
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, channels, sequence_length)
+        Returns:
+            torch.Tensor: Output tensor after applying the residual block
+        """
         out = F.relu(self.bn1(self.conv1(x)))
         out = F.relu(self.bn2(self.conv2(out)))
         out = self.bn3(self.conv3(out))
@@ -111,5 +121,3 @@ class ResidualBlock(nn.Module):
         out += shortcut
         out = F.relu(out)
         return out
-
-    

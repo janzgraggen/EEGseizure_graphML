@@ -2,7 +2,7 @@
 experiment: "gnn"
 name: "gcn_dist_time"
 description: "Two-layer GCN for seizure prediction with distance graph in time domain."
-task: "threshold_08"
+task: "threshold_05"
 # Data (same splits as before)
 config_dataset:
   n_splits: 5

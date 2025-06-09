@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-02 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to log parameters on Mlflow-*-
 
@@ -13,6 +13,7 @@ from pathlib import Path
 
 # Import modules
 import constants
+
 
 def log_cfg(cfg: dict):
     """Function used to log the configuration file on mlflow.
@@ -33,6 +34,7 @@ def log_cfg(cfg: dict):
     mlflow.log_param("optimizer", optimizer)
     mlflow.log_param("use_scheduler", use_scheduler)
     mlflow.log_param("learning_rate", learning_rate)
+
 
 def log_model_summary(model):
     """Function used to log the model summary on mlflow.
