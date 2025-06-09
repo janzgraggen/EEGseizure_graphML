@@ -111,7 +111,7 @@ def load_data(dataset_cfg: dict, config: dict, submission: bool = False) -> list
 
     # Get datasets for the specified splits
     for split in range(n_splits):
-
+        print(f"len of clips: {len(clips)}")
         if set_name in ["train", "val"]:
             labels = clips["label"].values
             indices = np.arange(len(clips))
@@ -125,14 +125,14 @@ def load_data(dataset_cfg: dict, config: dict, submission: bool = False) -> list
                 train_idx, val_idx = splits[split]
 
             if set_name == "train":
-                clips = clips.iloc[train_idx]
+                clips_split = clips.iloc[train_idx].copy()
             elif set_name == "val":
-                clips = clips.iloc[val_idx]
+                clips_split = clips.iloc[val_idx].copy()
 
-            clips.sort_index(inplace=True)
+            clips_split.sort_index(inplace=True)
 
         dataset = EEGDataset(
-            clips,
+            clips_split,
             signals_root=path,
             signal_transform=tfm,
             prefetch=True,
