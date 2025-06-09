@@ -167,16 +167,17 @@ def load_data(dataset_cfg: dict, config: dict, submission: bool = False) -> list
 
         # Get graph construction configuration
         graph_cfg = config.get("graph", None)
-
+        
         if graph_cfg is not None:
             dataset, _ = graph_construction(dataset, graph_cfg, dataset_cfg)
 
-            return torch_geometric.loader.DataLoader(
+            dataloader = torch_geometric.loader.DataLoader(
                 dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler
             )
-        dataloader = DataLoader(
-            dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler
-        )
+        else:
+            dataloader = DataLoader(
+                dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler
+            )
         dataloaders.append(dataloader)
 
     # If only one dataset is provided, return the single DataLoader

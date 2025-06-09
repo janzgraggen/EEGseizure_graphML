@@ -8,7 +8,7 @@
 import subprocess
 import os
 
-config_folder = "project/config/exp/cnn"
+config_folder = "project/config/exp/resnet"
 
 config_files = os.listdir(config_folder)
 # Filter out non-configuration files if necessary
