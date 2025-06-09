@@ -6,11 +6,12 @@ task: "seizure_prediction"
 
 # Data
 config_dataset:
-  val_size: 0.2
-  tfm: "fft"
+  #val_size: 0.2
+  n_splits: 5
+  tfm: "psd"
   graph: 
-      type: "correlation"
-      edge_threshold: 0.8
+      type: "coherence"
+      edge_threshold: 0.5
   num_workers: 4
   batch_size: 32
 
@@ -42,7 +43,7 @@ model:
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)
-      354 
+      30 
     hidden_channels_gat: 64
 
     hidden_channels_lstm: 128
