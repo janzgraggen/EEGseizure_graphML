@@ -40,6 +40,7 @@ class GraphBase(torch.nn.Module):
         criterion_name=constants.CRITERION,
         optimizer_name=constants.OPTIMIZER,
         submission=False,
+        fold=0
     ):
         """Train the model using the provided DataLoaders for training and validation.
 
@@ -73,9 +74,9 @@ class GraphBase(torch.nn.Module):
             self.train_losses.append(train_loss)
             train_accuracy, train_f1_score, cm_train = self.predict(loader_tr)
 
-            mlflow.log_metric("train_f1_score", train_f1_score, step=e + 1)
-            mlflow.log_metric("train_accuracy", train_accuracy, step=e + 1)
-            mlflow.log_metric("train_loss", train_loss, step=e + 1)
+            mlflow.log_metric(f"train_f1_score_{fold}", train_f1_score, step=e + 1)
+            mlflow.log_metric(f"train_accuracy_{fold}", train_accuracy, step=e + 1)
+            mlflow.log_metric(f"train_loss_{fold}", train_loss, step=e + 1)
 
             if not submission:
                 # Validation
@@ -98,9 +99,9 @@ class GraphBase(torch.nn.Module):
                         epoch=e + 1,
                     )
 
-                mlflow.log_metric("val_f1_score", val_f1_score, step=e + 1)
-                mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
-                mlflow.log_metric("val_loss", val_loss, step=e + 1)
+                mlflow.log_metric(f"val_f1_score_{fold}", val_f1_score, step=e + 1)
+                mlflow.log_metric(f"val_accuracy_{fold}", val_accuracy, step=e + 1)
+                mlflow.log_metric(f"val_loss_{fold}", val_loss, step=e + 1)
 
                 pbar.set_postfix(
                     {
