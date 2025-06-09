@@ -109,7 +109,7 @@ def power_spectral_density(x: np.ndarray) -> np.ndarray:
     
 
     
-    freqs, psd_signals = signal.welch(np.asarray(x.T, dtype=np.float32), fs=250, nperseg=250)
+    freqs, psd_signals = signal.welch(np.asarray(x.T, dtype=np.float32), fs=250)
 
     # Stack all channels (shape: [features, channels])
 
