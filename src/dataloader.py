@@ -417,8 +417,6 @@ def get_transform(tfm_name: str) -> callable:
         return clean_input
     elif tfm_name == "psd":
         return power_spectral_density
-    elif tfm_name == "wavelet":
-        return wavelet_transform_filtering
     else:
         return None
 
