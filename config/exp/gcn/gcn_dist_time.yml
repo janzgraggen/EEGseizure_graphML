@@ -39,7 +39,7 @@ model:
   n_epochs: 50
   optimizer: "Adam"
   use_scheduler: False
-  learning_rate: 2e-4
+  learning_rate: 1e-4
   criterion: "BCEWithLogitsLoss"
   config:
     in_channels:  # number of features per node (e.g. timepoints after FFT)
