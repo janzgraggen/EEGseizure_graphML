@@ -70,7 +70,8 @@ def power_spectral_density(x: np.ndarray) -> np.ndarray:
     
     freqs, psd_signals = signal.welch(np.asarray(x.T, dtype=np.float32), fs=250)
 
-    # Stack all channels (shape: [features, channels])
+    # remove frequencies outside the range of interest
+    psd_signals = psd_signals[:, np.logical_and(freqs >= 0.5, freqs <= 30)]
 
     # Log transform for numerical stability
     psd_signals = np.where(np.abs(psd_signals) > 1e-8, np.abs(psd_signals), 1e-8).T
