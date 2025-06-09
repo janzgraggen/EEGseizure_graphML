@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-05-13 -*-
-# -*- Last revision: 2025-05-26 by Caspar -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Implement a CNN-*-
 
@@ -61,8 +61,8 @@ class CNN(BaseModel):
     def forward(self, x):
         x = self.forward_conv(x)
         x = F.relu(self.fc1(x))
-        x = self.dropout_fc(x)
         x = self.fc2(x)
+        x = self.dropout_fc(x)
         return x
 
     @staticmethod

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-24 -*-
-# -*- Last revision: 2025-06-08 by roduit -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Implement the base model-*-
 
@@ -44,6 +44,8 @@ class BaseModel(torch.nn.Module):
         criterion_name=constants.CRITERION,
         optimizer_name=constants.OPTIMIZER,
         use_scheduler=True,
+        fold=0,
+        submission=False,
     ):
         self.train_losses = []
         self.val_losses = []
@@ -55,12 +57,11 @@ class BaseModel(torch.nn.Module):
         self.use_scheduler = use_scheduler
 
         if self.use_scheduler:
-            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer,
-                mode='min',         
-                factor=0.5,           
-                patience=3,
-            )
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
+                                self.optimizer,
+                                step_size=10, 
+                                gamma=0.5     
+                            )
 
         pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
         for e in range(num_epochs):
@@ -69,43 +70,45 @@ class BaseModel(torch.nn.Module):
             self.train_losses.append(train_loss)
             train_accuracy, train_f1_score, cm_train = self.predict(loader_tr)
 
-            mlflow.log_metric("train_f1_score ", train_f1_score, step=e + 1)
-            mlflow.log_metric("train_accuracy", train_accuracy, step=e + 1)
-            mlflow.log_metric("train_loss", train_loss, step=e + 1)
+            mlflow.log_metric(f"train_f1_score_fold_{fold}", train_f1_score, step=e + 1)
+            mlflow.log_metric(f"train_accuracy_{fold}", train_accuracy, step=e + 1)
+            mlflow.log_metric(f"train_loss_{fold}", train_loss, step=e + 1)
 
-            # Validation
-            val_loss = self._epoch(loader_val, train=False)
-            self.val_losses.append(val_loss)
-            val_accuracy, val_f1_score, cm_val = self.predict(loader_val)
-            
-            if self.use_scheduler:
-                self.scheduler.step(val_loss)
-                current_lr = self.scheduler.get_last_lr()[0]
-                mlflow.log_metric("learning_rate", current_lr, step=e + 1)
-
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                os.makedirs(tmp_dir, exist_ok=True)
-                plot_cm_matrix(
-                    cm_train,
-                    set="train",
-                    file_pth=tmp_dir,
-                    epoch=e + 1,
-                )
-                plot_cm_matrix(
-                    cm_val,
-                    set="val",
-                    file_pth=tmp_dir,
-                    epoch=e + 1,
-                )
-            
-            mlflow.log_metric("val_f1_score ", val_f1_score, step=e + 1)
-            mlflow.log_metric("val_accuracy", val_accuracy, step=e + 1)
-            mlflow.log_metric("val_loss", val_loss, step=e + 1)
-
-            pbar.set_postfix({"\ntrain_loss": train_loss, "val_loss": val_loss,
+            if not submission:
+                val_loss = self._epoch(loader_val, train=False)
+                self.val_losses.append(val_loss)
+                val_accuracy, val_f1_score, cm_val = self.predict(loader_val)
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    os.makedirs(tmp_dir, exist_ok=True)
+                    plot_cm_matrix(
+                        cm_train,
+                        set="train",
+                        file_pth=tmp_dir,
+                        epoch=e + 1,
+                    )
+                    plot_cm_matrix(
+                        cm_val,
+                        set="val",
+                        file_pth=tmp_dir,
+                        epoch=e + 1,
+                    )
+                mlflow.log_metric(f"val_f1_score_{fold}", val_f1_score, step=e + 1)
+                mlflow.log_metric(f"val_accuracy_{fold}", val_accuracy, step=e + 1)
+                mlflow.log_metric(f"val_loss_{fold}", val_loss, step=e + 1)  
+                pbar.set_postfix({"\ntrain_loss": train_loss, "val_loss": val_loss,
                 "\ntrain_f1_score": train_f1_score, "val_f1_score": val_f1_score,
                 "\ntrain_accuracy": train_accuracy, "val_accuracy": val_accuracy})
-            pbar.update(1) 
+                pbar.update(1)
+            else:
+                pbar.set_postfix({"\ntrain_loss": train_loss,
+                "\ntrain_f1_score": train_f1_score,
+                "\ntrain_accuracy": train_accuracy})
+                pbar.update(1) 
+
+            if self.use_scheduler:
+                self.scheduler.step()
+                current_lr = self.scheduler.get_last_lr()[0]
+                mlflow.log_metric("learning_rate", current_lr, step=e + 1)
 
     def predict_batch(self, x):
         """Make a prediction on a batch of data.
@@ -158,6 +161,7 @@ class BaseModel(torch.nn.Module):
             all_predictions,
             all_targets,
             average="macro",
+            num_classes=constants.NUM_CLASSES
         )
         
         # Compute confusion matrix

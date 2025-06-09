@@ -1,15 +1,15 @@
 ---
-experiment: "cnn"
-name: "cnn_base_downsample"
-description: "CNN with no tfm and downsampled"
-task: "v1"
+experiment: "fcn"
+name: "fcn_base"
+description: "FCN with base configuration"
+task: "v2_dropout"
 
 # Data
 config_dataset:
-  val_size: 0.2
+  n_splits: 2
   tfm: ""
   num_workers: 4
-  batch_size: 32
+  batch_size: 64
 
 datasets:
 -
@@ -31,11 +31,12 @@ datasets:
 
 # Model
 model:
-  name : "CNN"
-  n_epochs: 50
-  optimizer: "SGD"
+  name : "FCN"
+  n_epochs: 20
+  optimizer: "Adam"
   use_scheduler: True
-  learning_rate: 1e-2
+  learning_rate: 2e-4
   criterion: "BCEWithLogitsLoss"
   config:
-    input_shape: [19,3000]
+    input_channels: 19
+    num_classes: 1

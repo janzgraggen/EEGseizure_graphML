@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-06-08 by roduit -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
@@ -160,8 +160,6 @@ class GraphBase(torch.nn.Module):
             
         )
         return accuracy, float(f1), cm
-
-
 
     def _epoch(self, loader, train=True):
         if train:

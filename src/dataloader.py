@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-06-01 by roduit -*-
+# -*- Last revision: 2025-06-09 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to load the project-*-
 
@@ -26,7 +26,7 @@ import constants
 from transform_func import *
 from utils import is_mostly_zero_record
 
-def parse_datasets(datasets: list, config: dict, fold: int = 0, submission: bool= False) -> tuple[DataLoader, DataLoader, DataLoader]:
+def parse_datasets(datasets: list, config: dict, submission: bool= False) -> tuple[DataLoader, DataLoader, DataLoader]:
     """Parse the datasets from the configuration file and support cross-validation via fold index.
 
     Args:
@@ -47,26 +47,22 @@ def parse_datasets(datasets: list, config: dict, fold: int = 0, submission: bool
         set_type = dataset.get("set", None)
         if submission: 
             if set_type == "train":
-                sumbission_loader_train = load_data(dataset_cfg=dataset, config=config, submission=True)
+                loader_train = load_data(dataset_cfg=dataset, config=config, submission=True)
             elif set_type == "test":
-                submission_loader_test = load_data(dataset_cfg=dataset, config=config, submission=True)
+                loader_test = load_data(dataset_cfg=dataset, config=config, submission=True)
             else:
                 continue
-        # Inject fold for train and val sets
-        if set_type in ["train", "val"]:
-            dataset["fold"] = fold
-
-        if set_type == "train":
-            loader_train = load_data(dataset_cfg=dataset, config=config)
-        elif set_type == "val":
-            loader_val = load_data(dataset_cfg=dataset, config=config)
-        elif set_type == "test" and submission:
-            loader_test = load_data(dataset_cfg=dataset, config=config)
+        
         else:
-            if set_type == "test" and not submission: continue
-            raise ValueError(f"Unknown dataset type: {set_type}")
-    if submission:
-        return sumbission_loader_train,  None , submission_loader_test
+            if set_type == "train":
+                loader_train = load_data(dataset_cfg=dataset, config=config)
+            elif set_type == "val":
+                loader_val = load_data(dataset_cfg=dataset, config=config)
+            elif set_type == "test":
+                continue
+            else:
+                raise ValueError(f"Unknown dataset type: {set_type}")
+        
     return loader_train, loader_val, loader_test
 
 
@@ -87,60 +83,69 @@ def load_data(dataset_cfg: dict, config: dict, submission:bool = False) -> DataL
     sampling = dataset_cfg.get("sampling", False)
     size = int(dataset_cfg.get("size", 1))
     num_workers = config.get("num_workers", constants.NUM_WORKERS)
+    n_splits = config.get("n_splits", 0)
 
-    fold = dataset_cfg.get("fold", 0)  # Default fold = 0
+    dataloaders = []
 
-    if set_name in ["train", "val"]:
-        labels = clips["label"].values
-        indices = np.arange(len(clips))
+    if submission:
+        # For submission, we use the entire dataset as training data and a dummy validation set
+        n_splits = 1
+    for split in range(n_splits):
 
-        n_splits = config.get("n_splits", 5)
-        skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-        splits = list(skf.split(indices, labels))
-        train_idx, val_idx = splits[fold]
+        if set_name in ["train", "val"]:
+            labels = clips["label"].values
+            indices = np.arange(len(clips))
+            
+            if submission:
+                train_idx = indices
+                val_idx = [0]  # Dummy index for submission
+            else:            
+                skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+                splits = list(skf.split(indices, labels))
+                train_idx, val_idx = splits[split]
+
+            if set_name == "train":
+                clips = clips.iloc[train_idx]
+            elif set_name == "val":
+                clips = clips.iloc[val_idx]
+
+            clips.sort_index(inplace=True)
+
+        dataset = EEGDataset(
+            clips,
+            signals_root=path,
+            signal_transform=tfm,
+            prefetch=True,
+            return_id=get_id
+        )
         
-        if submission:
-            train_idx = indices
-            val_idx = [0]  # Dummy index for submission
+        # Remove zero-value samples
+        if tfm_name == "fusion":
+            valid_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0].fft)]
+        else:
+            valid_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0])]
 
-        if set_name == "train":
-            clips = clips.iloc[train_idx]
-        elif set_name == "val":
-            clips = clips.iloc[val_idx]
+        dataset = torch.utils.data.Subset(dataset, valid_indices)
+        sampler = None
 
-        clips.sort_index(inplace=True)
+        if sampling:
+            n_classes = len(np.unique(dataset.dataset.get_label_array()))
+            weights = make_weights_for_balanced_classes(dataset, n_classes)
+            sampler = WeightedRandomSampler(weights, size * len(dataset), replacement=True)
+            shuffle = False
 
-    dataset = EEGDataset(
-        clips,
-        signals_root=path,
-        signal_transform=tfm,
-        prefetch=True,
-        return_id=get_id
-    )
-    
-    # Remove zero-value samples
-    if tfm_name == "fusion":
-        valid_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0].fft)]
+        graph_cfg = config.get("graph", None)
+
+        if graph_cfg is not None:
+            dataset, _ = graph_construction(dataset, graph_cfg, dataset_cfg)
+            
+            return torch_geometric.loader.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
+        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
+        dataloaders.append(dataloader)
+    if len(dataloaders) == 1:
+        return dataloaders[0]
     else:
-        valid_indices = [i for i in range(len(dataset)) if not is_mostly_zero_record(dataset[i][0])]
-
-    dataset = torch.utils.data.Subset(dataset, valid_indices)
-    sampler = None
-
-    if sampling:
-        n_classes = len(np.unique(dataset.dataset.get_label_array()))
-        weights = make_weights_for_balanced_classes(dataset, n_classes)
-        sampler = WeightedRandomSampler(weights, size * len(dataset), replacement=True)
-        shuffle = False
-
-    graph_cfg = config.get("graph", None)
-
-    if graph_cfg is not None:
-        dataset, _ = graph_construction(dataset, graph_cfg, dataset_cfg)
-        
-        return torch_geometric.loader.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
-
-    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, sampler=sampler)
+        return dataloaders
 
 def make_weights_for_balanced_classes(samples:Dataset, nclasses:int) -> list:
     """Code taken from https://stackoverflow.com/questions/67799246/weighted-random-sampler-oversample-or-undersample
