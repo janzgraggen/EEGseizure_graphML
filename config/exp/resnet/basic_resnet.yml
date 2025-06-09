@@ -28,7 +28,7 @@ datasets:
 -
   set: "test"
   # path: "/home/ogut/data/test"
-  path: "project/data/train"
+  path: "project/data/test"
   shuffle: False
 
 # Model

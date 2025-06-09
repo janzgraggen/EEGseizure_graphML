@@ -13,11 +13,19 @@ EE452 - Netork Machine Learning
 
 ## Table of Contents
 
+- [Abstract](#abstract)
 - [Project Structure](#project-structure)
 - [Data Structure](#data-structure)
 - [Connection to SCITAS](#connection-to-scitas)
 - [Mlflow](#mlflow)
+- [Use the Models](#use-the-models)
+- [Results](#results)
 - [Contributors](#contributors)
+
+## Abstract
+Epilepsy is a neurological disorder caused by abnormal neuronal activity. This irregular brain activity often leads to unpredictable disruptions of normal brain function, known as epileptic seizures.
+The primary method for detecting these seizures is electroencephalography (EEG), which involves recording brain activity using multiple electrodes.
+Manually detecting seizures—especially in long EEG recordings—can be time-consuming. To address this, Machine Learning (ML) techniques can assist in the diagnostic process. These techniques include traditional models such as CNNs, LSTMs, and ResNets, as well as more specialized architectures based on graph structures, such as Graph Convolutional Networks (GCNs) and Graph Attention Networks (GATs). This project aims to compare the different methods.
 
 ## Project Structure
 ```
@@ -80,7 +88,7 @@ Warning: it is important to be in the same folder as the file when running the c
 This project uses the [Mlflow library](https://mlflow.org) to keep track of the experiment.
 
 ### Lauching Mlflow server
-By default, the experiments are saved in `./mlflow` folder. To see the results, in the terminal use the following command:
+By default, the experiments are saved in `./project/mlflow` folder. To see the results, in the terminal use the following command:
 ```
  mlflow ui --backend-store-uri ./project/mlruns
 ```
@@ -96,11 +104,16 @@ scp username@izar.hpc.epfl.ch:/home/username/EE452-Network-Machine-Learning/proj
 
 and replacing `/path/to/experiment` with the desired experiment path, `username` by your Gaspar ID and `~/path/to/destination` with the path to your destination location.
 
+## Use the Models
+If you want to use this project and test it, you can just do:
+```
+python project/src/run.py --cfg your/exp/folder/your_exp.yml
+```
+
+The code will run the experiment with the parameters you configured in the .yml file. You can use the one provided at the [exp folder](./config/).
+
 # Results
-- fcn_base_adam : 0.65510
-- cnn_base_adam : 0.41078
-- fcn_fft: 0.50754
-- GCN (39f7):  0.76170
+The table below summarizes the results. For more informations about the methodology, please check the [report](./documents/report.pdf)
 
 ## Contributors
 This project has been elaborated by Vincent Roduit, Caspar Henking, Aurel Mäder and Jan Zgraggen during the 2025 spring semester at EPFL.

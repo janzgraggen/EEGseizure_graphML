@@ -46,11 +46,11 @@ def main(args: argparse.Namespace):
     }
     run_name = "{}:{}:{}".format(experiment, name, seed)
     with mlflow.start_run(run_name=run_name):
+        run_id = mlflow.active_run().info.run_id
         loader_train, loader_val, loader_test = parse_datasets(
             datasets=datasets_cfg, config=config_dataset
         )
         for fold in range(n_splits):
-            run_id = mlflow.active_run().info.run_id
             model = choose_model(cfg=model_cfg)
             log_cfg(cfg=model_cfg)
 
@@ -93,6 +93,7 @@ def main(args: argparse.Namespace):
                 print(f"{metric}: {mean_value:.2f} ± {std_value:.2f}")
 
         print(f"\n========== Train on all  ==========")
+        model = choose_model(cfg=model_cfg)
         log_cfg(cfg=model_cfg)
         loader_train, loader_val, loader_test = parse_datasets(
             datasets=datasets_cfg, config=config_dataset, submission=True

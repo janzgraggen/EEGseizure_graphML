@@ -8,10 +8,6 @@
 # Import libraries
 import numpy as np
 from scipy import signal
-import numpy as np
-import numpy as np
-import pywt
-
 
 def time_filtering(x: np.ndarray) -> np.ndarray:
     """Filter signal in the time domain
@@ -58,39 +54,6 @@ def clean_input(x: np.ndarray) -> np.ndarray:
     x = (x - mean) / (std + 1e-6)
 
     return x
-
-
-def wavelet_transform_filtering(x: np.ndarray) -> np.ndarray:
-    """Apply Discrete Wavelet Transform (DWT) and return log-scaled wavelet coefficients.
-
-    Args:
-        x (np.ndarray): Input signal of shape [time, channels].
-
-    Returns:
-        np.ndarray: Log-transformed wavelet coefficients, stacked across levels.
-    """
-    # Set wavelet type and decomposition level
-    wavelet = "db4"
-    level = 4  # Adjust based on sampling rate and desired resolution
-
-    coeffs_per_channel = []
-
-    for ch in range(x.shape[1]):
-        coeffs = pywt.wavedec(x[:, ch], wavelet=wavelet, level=level)
-        # Concatenate detail coefficients only (omit approximation if needed)
-        detail_coeffs = np.concatenate(coeffs[1:], axis=0)
-        coeffs_per_channel.append(detail_coeffs)
-
-    # Stack all channels (shape: [features, channels])
-    wavelet_data = np.stack(coeffs_per_channel, axis=-1)
-
-    # Log transform for numerical stability
-    wavelet_data = np.log(
-        np.where(np.abs(wavelet_data) > 1e-8, np.abs(wavelet_data), 1e-8)
-    )
-
-    return wavelet_data
-
 
 def power_spectral_density(x: np.ndarray) -> np.ndarray:
     """Apply power spectral density and return band energies coefficients.

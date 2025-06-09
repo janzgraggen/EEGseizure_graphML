@@ -40,6 +40,7 @@ class GraphBase(torch.nn.Module):
         criterion_name=constants.CRITERION,
         optimizer_name=constants.OPTIMIZER,
         submission=False,
+        use_scheduler=True,
         fold=0
     ):
         """Train the model using the provided DataLoaders for training and validation.
@@ -59,12 +60,12 @@ class GraphBase(torch.nn.Module):
 
         self.optimizer = get_optimizer(optimizer_name, self.parameters(), learning_rate)
         self.criterion = get_criterion(criterion_name)
-
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            self.optimizer,
-            T_max=num_epochs,
-            eta_min=0.00001,
-        )
+        self.use_scheduler = use_scheduler
+        if self.use_scheduler:
+            self.scheduler = torch.optim.lr_scheduler.StepLR(
+                    self.optimizer, step_size=10, gamma=0.5
+                )
+        
         self.to(self.device)
 
         pbar = tqdm(total=num_epochs, desc="Training", position=0, leave=True)
@@ -116,6 +117,11 @@ class GraphBase(torch.nn.Module):
                     }
                 )
             pbar.update(1)
+
+            if self.use_scheduler:
+                self.scheduler.step()
+                current_lr = self.scheduler.get_last_lr()[0]
+                mlflow.log_metric("learning_rate", current_lr, step=e + 1)
 
     def predict_batch(self, batch):
         """Make predictions on a PyG batch.

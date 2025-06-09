@@ -13,11 +13,10 @@ import torch
 import yaml
 
 # Import modules
-from models.graph_models import GAT, GCN, LSTMGNN, LSTMGAT, EccGatGNN
+from models.graph_models import GAT, GCN, LSTMGNN, LSTMGAT
 from models.cnn import CNN
 from models.fcn import FCN
 from models.resnet import ResNet
-
 
 def set_seed(seed: int = 42):
     """Set the seed for reproducibility.
@@ -84,9 +83,6 @@ def choose_model(cfg: dict) -> torch.nn.Module:
         return LSTMGAT.from_config(model_cfg=model_cfg)
     elif model_name == "GCN":
         return GCN.from_config(model_cfg=model_cfg)
-    elif model_name == "EccGatGNN":
-        return EccGatGNN.from_config(model_cfg=model_cfg)
-
     else:
         raise ValueError(f"Model {model_name} not found.")
 
