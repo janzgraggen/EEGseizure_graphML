@@ -9,7 +9,7 @@ Ecole Polytechnique Fédérale de Lausanne
 EE452 - Netork Machine Learning
 </div> 
 
-# Graph-based EEG Analysis
+# Comparing time-series and graph-based models in EEG seizure detection
 
 ## Table of Contents
 
@@ -23,24 +23,51 @@ EE452 - Netork Machine Learning
 - [Contributors](#contributors)
 
 ## Abstract
-Epilepsy is a neurological disorder caused by abnormal neuronal activity. This irregular brain activity often leads to unpredictable disruptions of normal brain function, known as epileptic seizures.
-The primary method for detecting these seizures is electroencephalography (EEG), which involves recording brain activity using multiple electrodes.
-Manually detecting seizures—especially in long EEG recordings—can be time-consuming. To address this, Machine Learning (ML) techniques can assist in the diagnostic process. These techniques include traditional models such as CNNs, LSTMs, and ResNets, as well as more specialized architectures based on graph structures, such as Graph Convolutional Networks (GCNs) and Graph Attention Networks (GATs). This project aims to compare the different methods.
+Epilepsy is a neurological disorder characterized by abnormal neuronal activity that can cause sudden disruptions in brain function, known as seizures. Electroencephalography (EEG) is the primary tool for detecting these events. Machine learning methods can be effectively applied to detect seizures in EEG data. In this project, we compare the performance of time-series-based and graph-based machine learning architectures for seizure prediction. To this end, we experiment with different signal representations, graph construction methods, and model architectures. Our results show that hybrid models combining both temporal and graph-based processing of EEG data (such as GAT-LSTM) perform particularly well, achieving F1 scores of up to 80%.
 
 ## Project Structure
 ```
 .
-├── README.md
+├── config
+│   └── exp
 ├── data
 │   ├── distances_3d.csv
-│   ├── sample_submission.csv
+│   ├── submission
 │   ├── test
-│   └── train
+│   ├── train
+│   └── val
 ├── documents
-│   └── NML_Project_Proposal.pdf
+│   ├── NML_Project_Proposal.pdf
+│   ├── report.pdf
+│   └── README.md
+├── README.md
+├── requirements.txt
+├── resources
+│   ├── gat_lstm.png
+│   ├── ...
+│   └── small-gcn_metrics_report.csv
 └── src
-    └── example.ipynb
+    ├── constants.py
+    ├── dataloader.py
+    ├── logs.py
+    ├── models
+    ├── plots.py
+    ├── report.ipynb
+    ├── run_multiple.py
+    ├── run.job
+    ├── run.py
+    ├── train.py
+    ├── transform_func.py
+    └── utils.py
 ```
+
+Some important files/folders:
+- The [config](./config/) folder contains all the `.yml`files implementing the models explained in the report.
+- The [report](./documents/report.pdf) summarizes the work done in this project.
+- The [src](./src) folder contains all the code.
+    - [run.py](./src/run.py): entry point to run the experiments.
+    - [models](./src/models/) folder contains all the code related to the models.
+    - [run.job](./src/run.job): file to use to submit a job on Scitas.
 ## Data Structure
 
 Data are available using the following Kaggle command:
