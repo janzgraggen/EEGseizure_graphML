@@ -6,7 +6,7 @@
 Ecole Polytechnique Fédérale de Lausanne
 </div> 
 <div align="center">
-EE452 - Netork Machine Learning
+EE452 - Network Machine Learning
 </div> 
 
 # Comparing time-series and graph-based models in EEG seizure detection
