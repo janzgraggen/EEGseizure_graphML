@@ -141,5 +141,34 @@ The code will run the experiment with the parameters you configured in the .yml 
 # Results
 The table below summarizes the results. For more informations about the methodology, please check the [report](./documents/report.pdf)
 
+### Non-Graph-Based Models
+
+| Model         | Signal | F1 (%)       | Acc. (%)     | F1ₖ (%)   |
+|---------------|--------|--------------|--------------|-----------|
+| ResNet        | FFT    | 87 ± 6       | 93 ± 4       | 70.35     |
+| ResNet        | PSD    | 19 ± 2       | 22 ± 1       | -         |
+| FCN           | BP     | 79 ± 6       | 85 ± 7       | -         |
+| FCN           | FFT    | 77 ± 6       | 83 ± 7       | -         |
+| FCN           | PSD    | 18 ± 0       | 20 ± 0       | -         |
+| FCN           | -      | 75 ± 1       | 84 ± 1       | 69.62     |
+| CNN           | -      | 71 ± 4       | 81 ± 3       | -         |
+| CNN           | BP     | 69 ± 2       | 79 ± 3       | -         |
+| CNN           | FFT    | 68 ± 9       | 74 ± 13      | -         |
+| LSTM (Base)   | -      | 67.9         | -            | 67.9      |
+
+### Graph-Based Models
+
+| Model      | Graph [th] | Signal | F1 (%)       | Acc. (%)     | F1ₖ (%)   |
+|------------|-------------|--------|--------------|--------------|-----------|
+| GCN        | dst [0.8]   | FFT    | 64 ± 1       | 72 ± 1       | -         |
+| GCN        | dst [0.8]   | BP     | 62 ± 1       | 73 ± 0       | -         |
+| GCN        | dst [0.5]   | BP     | 61 ± 0       | 73 ± 0       | -         |
+| GCN        | cor [0.5]   | FFT    | 65 ± 1       | 74 ± 2       | 76.09     |
+| GCN        | coh [0.8]   | PSD    | 67 ± 2       | 75 ± 1       | 78.55     |
+| LSTM-GCN   | coh [0.5]   | FFT    | 65 ± 1       | 72 ± 1       | -         |
+| LSTM-GCN   | coh [0.5]   | PSD    | 77 ± 1       | 84 ± 1       | **83.55** |
+| LSTM-GCN   | cor [0.8]   | PSD    | 78 ± 0       | 85 ± 1       | 80.32     |
+| LSTM-GAT   | coh [0.5]   | PSD    | **80 ± 1**   | 87 ± 1       | 72.34     |
+
 ## Contributors
 This project has been elaborated by Vincent Roduit, Caspar Henking, Aurel Mäder and Jan Zgraggen during the 2025 spring semester at EPFL.
