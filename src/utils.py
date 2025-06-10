@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : Vincent Roduit -*-
 # -*- date : 2025-04-28 -*-
-# -*- Last revision: 2025-06-09 by roduit -*-
+# -*- Last revision: 2025-06-10 by roduit -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Utils functions -*-
 
@@ -13,7 +13,7 @@ import torch
 import yaml
 
 # Import modules
-from models.graph_models import GAT, GCN, LSTMGNN, LSTMGAT
+from models.graph_models import GCN, LSTMGNN, LSTMGAT
 from models.cnn import CNN
 from models.fcn import FCN
 from models.resnet import ResNet
@@ -75,8 +75,6 @@ def choose_model(cfg: dict) -> torch.nn.Module:
         return FCN.from_config(model_cfg=model_cfg)
     elif model_name == "ResNet":
         return ResNet.from_config(model_cfg=model_cfg)
-    elif model_name == "GAT":
-        return GAT.from_config(model_cfg=model_cfg)
     elif model_name == "LSTMGNN":
         return LSTMGNN.from_config(model_cfg=model_cfg)
     elif model_name == "LSTMGAT":
