@@ -39,7 +39,6 @@ Epilepsy is a neurological disorder characterized by abnormal neuronal activity 
 ├── documents
 │   ├── NML_Project_Proposal.pdf
 │   ├── report.pdf
-│   └── README.md
 ├── README.md
 ├── requirements.txt
 ├── resources

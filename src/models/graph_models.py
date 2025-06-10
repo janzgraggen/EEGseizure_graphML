@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -*- authors : janzgraggen -*-
 # -*- date : 2025-05-02 -*-
-# -*- Last revision: 2025-06-09 by roduit -*-
+# -*- Last revision: 2025-06-10 by Caspar -*-
 # -*- python version : 3.10.4 -*-
 # -*- Description: Functions to train models-*-
 
@@ -14,42 +14,6 @@ import torch.nn.functional as F
 # Import parent class and constants
 from models.graph_base import GraphBase
 import constants
-
-
-class GAT(GraphBase):
-    """Graph Attention Network (GAT) model.
-
-    Args:
-        GraphBase (Graphase): Base class for graph neural networks.
-    """
-
-    def __init__(self, in_channels: int, hidden_channels: int, heads=4):
-        super().__init__()
-        self.device = constants.DEVICE
-        self.conv1 = nngc.GATConv(in_channels, hidden_channels, heads=heads)
-        self.conv2 = nngc.GATConv(hidden_channels * heads, hidden_channels)
-        self.lin = nn.Linear(hidden_channels, 1)
-
-        self.to(self.device)
-
-    def forward(self, data):
-        """Forward pass of the GAT model.
-        Args:
-            data (torch_geometric.data.Data): Input data containing node features,
-                                                edge indices, and batch information.
-        Returns:
-            torch.Tensor: Output logits for binary classification.
-        """
-        x, edge_index, batch = data.x, data.edge_index, data.batch
-        x = self.conv1(x, edge_index).relu()
-        x = self.conv2(x, edge_index).relu()
-        x = nngc.global_mean_pool(x, batch)
-        return self.lin(x)
-
-    @staticmethod
-    def from_config(model_cfg):
-        return GAT(**model_cfg)
-
 
 class GCN(GraphBase):
     """Graph Convolutional Network (GCN) model.
