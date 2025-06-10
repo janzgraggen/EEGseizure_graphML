@@ -1,12 +1,11 @@
 
 experiment: "gat-lstm"
 name: "lstm"
-description: "Two-layer GAT with LSTM layer at the end for seizure prediction, using correlation graph."
+description: "Two-layer GAT with LSTM layer at the end for seizure prediction, using corherence graph."
 task: "seizure_prediction"
 
 # Data
 config_dataset:
-  #val_size: 0.2
   n_splits: 5
   tfm: "psd"
   graph: 
@@ -18,19 +17,22 @@ config_dataset:
 datasets:
 -
   set: "train"
-  path: "/home/ogut/data/train"
+  # path: "/home/ogut/data/train"
+  path: "project/data/train"
   sampling: True
   size: 1
   shuffle: True
 
 -
   set: "val"
-  path: "/home/ogut/data/train"
+  # path: "/home/ogut/data/train"
+  path: "project/data/train"
   shuffle: False
 
 -
   set: "test"
-  path: "/home/ogut/data/test"
+  # path: "/home/ogut/data/test"
+  path: "project/data/test"
   shuffle: False
 
 # Model

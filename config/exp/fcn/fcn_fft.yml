@@ -14,6 +14,7 @@ config_dataset:
 datasets:
 -
   set: "train"
+  # path: "/home/ogut/data/train"
   path: "project/data/train"
   sampling: True
   size: 1
@@ -21,11 +22,13 @@ datasets:
 
 -
   set: "val"
+  # path: "/home/ogut/data/train"
   path: "project/data/train"
   shuffle: False
 
 -
   set: "test"
+  # path: "/home/ogut/data/test"
   path: "project/data/test"
   shuffle: False
 
