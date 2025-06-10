@@ -1,0 +1,51 @@
+
+experiment: "gcn-lstm"
+name: "lstm"
+description: "Two-layer GCN with LSTM layer at the end for seizure prediction, using corherence graph."
+task: "seizure_prediction"
+
+# Data
+config_dataset:
+  n_splits: 5
+  tfm: "fft"
+  graph: 
+      type: "coherence"
+      edge_threshold: 0.5
+  num_workers: 4
+  batch_size: 32
+
+datasets:
+-
+  set: "train"
+  # path: "/home/ogut/data/train"
+  path: "project/data/train"
+  sampling: True
+  size: 1
+  shuffle: True
+
+-
+  set: "val"
+  # path: "/home/ogut/data/train"
+  path: "project/data/train"
+  shuffle: False
+
+-
+  set: "test"
+  # path: "/home/ogut/data/test"
+  path: "project/data/test"
+  shuffle: False
+
+# Model
+model:
+  name: "LSTMGAT"
+  n_epochs: 50
+  optimizer: "Adam"
+  use_scheduler: False
+  learning_rate: 0.001
+  criterion: "BCEWithLogitsLoss"
+  config:
+    in_channels:  # number of features per node (e.g. timepoints after FFT)
+      30 
+    hidden_channels_gat: 64
+
+    hidden_channels_lstm: 128
