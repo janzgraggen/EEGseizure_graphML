@@ -1,5 +1,5 @@
 <div align="center">
-<img src="../resources/logo-epfl.png" alt="Example Image" width="192" height="108">
+<img src="resources/logo-epfl.png" alt="Example Image" width="192" height="108">
 </div>
 
 <div align="center">
@@ -171,4 +171,8 @@ The table below summarizes the results. For more informations about the methodol
 | LSTM-GAT   | coh [0.5]   | PSD    | **80 ± 1**   | 87 ± 1       | 72.34     |
 
 ## Contributors
-This project has been elaborated by Vincent Roduit, Caspar Henking, Aurel Mäder and Jan Zgraggen during the 2025 spring semester at EPFL.
+This project has been developped by Vincent Roduit, Caspar Henking, Aurel Mäder and Jan Zgraggen during the 2025 spring semester at EPFL.
+
+The code in this repository is extracted and adapted from the original group repository:
+[roduit/EE452-Network-Machine-Learning](https://github.com/roduit/EE452-Network-Machine-Learning),
+specifically from the `project/` subfolder.
